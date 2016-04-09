@@ -1,0 +1,6 @@
+This folder contains the core files of FreeRTOS without modifications.
+However, the normal FreeRTOS demo projects are not included. The FreeRTOS+Trace 
+demos are found in the Demo directory at the top level of this package.
+
+Percepio AB
+www.percepio.se

@@ -82,11 +82,11 @@ void MPU6050_Initialize(void)
 	data[0] = 0x00;
 	if(MPU6050_I2C_ByteWrite(10,&data[0],MPU6050_RA_PWR_MGMT_1 )==TWI_SUCCESS)
 	{
-		usart_write_line((Usart*)UART1,"Wake UP MPU chip OK...\n");
+	//	usart_write_line((Usart*)UART1,"Wake UP MPU chip OK...\n");
 	}
 	else
 	{
-		usart_write_line((Usart*)UART1,"Wake UP MPU FALSE...\n");
+	//	usart_write_line((Usart*)UART1,"Wake UP MPU FALSE...\n");
 		NVIC_SystemReset();
 	}
 	
@@ -95,10 +95,10 @@ void MPU6050_Initialize(void)
     data[0] = BIT_RESET;
 	if(MPU6050_I2C_ByteWrite(10,&data[0],MPU6050_RA_PWR_MGMT_1 )==TWI_SUCCESS)
 	{
-		usart_write_line((Usart*)UART1,"MPU - RESET OK...\n");			 
+	//	usart_write_line((Usart*)UART1,"MPU - RESET OK...\n");			 
 	}else
 	{
-		usart_write_line((Usart*)UART1,"MPU - RESET FALSE...\n");
+	//	usart_write_line((Usart*)UART1,"MPU - RESET FALSE...\n");
 		NVIC_SystemReset();		
 	}
 	
@@ -107,19 +107,19 @@ void MPU6050_Initialize(void)
 	data[0] = 0x00;
 	if(MPU6050_I2C_ByteWrite(10,&data[0],MPU6050_RA_PWR_MGMT_1 )==TWI_SUCCESS)
 	{
-		usart_write_line((Usart*)UART1,"Wake UP MPU chip OK...\n");		
+	//	usart_write_line((Usart*)UART1,"Wake UP MPU chip OK...\n");		
 	}else
 	{
-		usart_write_line((Usart*)UART1,"Wake UP MPU FALSE...\n");
+		//usart_write_line((Usart*)UART1,"Wake UP MPU FALSE...\n");
 		NVIC_SystemReset();
 	}
 
  	if(MPU6050_TestConnection()==true)
  	{
- 		usart_write_line((Usart*)UART1,"Test MPU ID OK...\n");		
+ 	//	usart_write_line((Usart*)UART1,"Test MPU ID OK...\n");		
  	}else
 	{
- 		usart_write_line((Usart*)UART1,"Test MPU ID False...\n");
+ 		//usart_write_line((Usart*)UART1,"Test MPU ID False...\n");
  		NVIC_SystemReset();
 	}
 
@@ -128,11 +128,11 @@ void MPU6050_Initialize(void)
 	data[0] = 0x00;
 	if(MPU6050_I2C_ByteWrite(10,&data[0],MPU6050_RA_PWR_MGMT_1 )==TWI_SUCCESS)
 	{
-		usart_write_line((Usart*)UART1,"Wake UP MPU chip OK...\n");
+	//	usart_write_line((Usart*)UART1,"Wake UP MPU chip OK...\n");
 	}
 	else
 	{
-		usart_write_line((Usart*)UART1,"Wake UP MPU FALSE...\n");
+	//	usart_write_line((Usart*)UART1,"Wake UP MPU FALSE...\n");
 		NVIC_SystemReset();
 	}
 	
@@ -190,11 +190,11 @@ void MPU6050_Initialize(void)
 	vTaskDelay(50/portTICK_RATE_MS);
 	if(MPU6050_I2C_ByteWrite(10,&data[0],MPU6050_RA_INT_ENABLE)==TWI_SUCCESS)
 	{
-		usart_write_line((Usart*)UART1,"INT enabled MPU OK...\n");		
+		//usart_write_line((Usart*)UART1,"INT enabled MPU OK...\n");		
 	}
 	else
 	{
-		usart_write_line((Usart*)UART1,"INT enabled MPU FALSE...\n");
+		//usart_write_line((Usart*)UART1,"INT enabled MPU FALSE...\n");
 		NVIC_SystemReset();
 		
 	}
@@ -210,7 +210,7 @@ void MPU6050_Initialize(void)
  */
 bool MPU6050_TestConnection(void)
 {
-	return MPU6050_GetDeviceID() == 0x34 ? true : false; //0b110100; 8-bit representation in hex = 0x34
+	return MPU6050_GetDeviceID() == 0x39 ? true : false; //0b110100; 8-bit representation in hex = 0x34
 }
 
 /** Get Device ID.
@@ -372,7 +372,7 @@ void MPU6050_SetSleepModeStatus(uint8_t NewState)
 void MPU6050_GetRawAccelGyro(short* AccelGyro)
 {
     uint8_t tmpBuffer[14];
-    MPU6050_I2C_BufferRead(MPU6050_DEFAULT_ADDRESS, tmpBuffer, MPU6050_RA_ACCEL_XOUT_H, 14);
+    MPU9250_BufferRead(MPU6050_DEFAULT_ADDRESS, tmpBuffer, MPU6050_RA_ACCEL_XOUT_H, 14);
     /* Get acceleration */
     for (int i = 0; i < 3; i++)
         AccelGyro[i] = ((short) ((uint16_t) tmpBuffer[2 * i] << 8) + tmpBuffer[2 * i + 1]);
@@ -399,7 +399,7 @@ void MPU6050_WriteBits(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitStart, uin
     // 10100011 original & ~mask
     // 10101011 masked | value
     uint8_t tmp;
-    MPU6050_I2C_BufferRead(slaveAddr, &tmp, regAddr, 1);
+    MPU9250_BufferRead(slaveAddr, &tmp, regAddr, 1);
     uint8_t mask = ((1 << length) - 1) << (bitStart - length + 1);
     data <<= (bitStart - length + 1); // shift data into correct position
     data &= mask; // zero all non-important bits in data
@@ -417,7 +417,7 @@ void MPU6050_WriteBits(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitStart, uin
 void MPU6050_WriteBit(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitNum, uint8_t data)
 {
     uint8_t tmp;
-    MPU6050_I2C_BufferRead(slaveAddr, &tmp, regAddr, 1);
+    MPU9250_BufferRead(slaveAddr, &tmp, regAddr, 1);
     tmp = (data != 0) ? (tmp | (1 << bitNum)) : (tmp & ~(1 << bitNum));
     MPU6050_I2C_ByteWrite(slaveAddr, &tmp, regAddr);
 }
@@ -438,7 +438,7 @@ void MPU6050_ReadBits(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitStart, uint
     //    010   masked
     //   -> 010 shifted
     uint8_t tmp;
-    MPU6050_I2C_BufferRead(slaveAddr, &tmp, regAddr, 1);
+    MPU9250_BufferRead(slaveAddr, &tmp, regAddr, 1);
     uint8_t mask = ((1 << length) - 1) << (bitStart - length + 1);
      tmp &= mask;
      tmp >>= (bitStart - length + 1);
@@ -455,7 +455,7 @@ void MPU6050_ReadBits(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitStart, uint
 void MPU6050_ReadBit(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitNum, uint8_t *data)
 {
     uint8_t tmp;
-    MPU6050_I2C_BufferRead(slaveAddr, &tmp, regAddr, 1);
+    MPU9250_BufferRead(slaveAddr, &tmp, regAddr, 1);
     *data = tmp & (1 << bitNum);
 }
 
@@ -484,7 +484,7 @@ uint32_t MPU6050_I2C_ByteWrite(uint8_t slaveAddr, uint8_t* pBuffer, uint8_t writ
  * @param  NumByteToRead : number of bytes to read from the MPU6050 ( NumByteToRead >1  only for the Mgnetometer readinf).
  * @return None
  */
-uint32_t MPU6050_I2C_BufferRead(uint8_t slaveAddr, uint8_t* pBuffer, uint8_t readAddr, short NumByteToRead)
+uint32_t MPU9250_BufferRead(uint8_t slaveAddr, uint8_t* pBuffer, uint8_t readAddr, short NumByteToRead)
 {
     // ENTR_CRT_SECTION();
  //	for (short i=0;i<NumByteToRead;i++)
@@ -528,7 +528,7 @@ void MPU9150_getMotion9(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int1
 void MPU9150_getMotion6(short* ax, short* ay, short* az, short* gx, short* gy, short* gz,short *offset) 
 {	
 	uint8_t buffer[14];
-    MPU6050_I2C_BufferRead(MPU6050_DEFAULT_ADDRESS,buffer, MPU6050_RA_ACCEL_XOUT_H, 12);
+    MPU9250_BufferRead(MPU6050_DEFAULT_ADDRESS,buffer, MPU6050_RA_ACCEL_XOUT_H, 12);
     *ax = (((short)buffer[0]) << 8) | buffer[1];
     *ay = (((short)buffer[2]) << 8) | buffer[3];
     *az = (((short)buffer[4]) << 8) | buffer[5];
@@ -540,7 +540,7 @@ void MPU9150_getMotion6(short* ax, short* ay, short* az, short* gx, short* gy, s
 void MPU9150_getMotion3(uint8_t *buffer)
 {
 	
-	MPU6050_I2C_BufferRead(MPU6050_DEFAULT_ADDRESS,buffer,MPU6050_RA_GYRO_XOUT_H, 6);
+	MPU9250_BufferRead(MPU6050_DEFAULT_ADDRESS,buffer,MPU6050_RA_GYRO_XOUT_H, 6);
 	
 }
 /* not fifo, but clear data */
@@ -580,14 +580,14 @@ short MPU9150_getMotion_fifo(uint8_t* FIFO_MPU)
 // 	    	MPU6050_I2C_ByteWrite(10,data,MPU6050_RA_FIFO_EN);
 			
 	/* read count of Fifo */
-	MPU6050_I2C_BufferRead(10,data,MPU6050_RA_FIFO_COUNTH,2);
+	MPU9250_BufferRead(10,data,MPU6050_RA_FIFO_COUNTH,2);
 	temp=(((short)data[0]) << 8) | data[1];
 	//temp-=6*25;	//budeme èíst o x Bytes ménì
 		
 	/* read FIFO */
 	if (temp>=14)
 	{
-		MPU6050_I2C_BufferRead(10,&FIFO_MPU[0],MPU6050_RA_FIFO_R_W,temp);	
+		MPU9250_BufferRead(10,&FIFO_MPU[0],MPU6050_RA_FIFO_R_W,temp);	
 	}
 	return temp;	
 // 		 	/* Enable Fifo, GYRO, Temp and Acc*/

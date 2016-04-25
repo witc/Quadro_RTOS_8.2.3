@@ -22,7 +22,6 @@
 #define	TX_TO_MATLAB		0
 #define	RX_NEW_CMD			1
 
-
 //LoRa
 typedef enum
 {
@@ -79,13 +78,7 @@ typedef struct{
 	
 }MANAGE_TASK;
 
-typedef struct{
-	
-	short Task;
-	short State_RDY;
-	
-}MANAGER_TASK;
-/************************************************************************/
+/********************************************************/
 //GPS
 typedef struct{
 	char Time[9];
@@ -102,16 +95,6 @@ typedef struct{
 
 /************************************************************************/
 
-typedef struct{
-	char Nmea_data[150];
-	//pokud je nalezena vìta
-	uint8_t GL_flag_gps;
-	char Nmea_crc[3];
-	uint8_t My_crc;
-	GP_GGA S_GPGGA;
-	MANAGE_TASK	Stat;
-	
-}GPS_Queue;
 
 /************************************************************************/
 //RF
@@ -137,7 +120,7 @@ typedef struct{
 	float pitch;
 	float roll;
 	float yaw;
-	
+	float Baro;
 	short Gyro_d[3];
 	
 	uint16_t TX_CH_xx[4];
@@ -146,9 +129,17 @@ typedef struct{
 	//float Temp;
 }Motor_Queue;
 
+
+
+#define MPU_TYPE	0x1
+#define BARO_TYPE	0x2
+#define GPS_TYPE	0x3
+#define MAG_TYPE	0x4
 /* MPU9150*/
 typedef struct{
-
+	
+	uint8_t senzor_type;
+	
 #if (RAW_MPU9150==1)
 	uint8_t MPU_FIFO[14];
 
@@ -165,10 +156,12 @@ typedef struct{
 # error "Please specify Way to get a datta from MPU9150"
 #endif	
 	
+	uint8_t baro[5];
+	uint8_t mag[6];
 	short temp;
 	
 
-}MPU9150_Queue;
+}Senzor_Queue;
 
 #if ((RAW_INT_MPU9150==1))
 

@@ -20,8 +20,6 @@ void SX1276Init( void )
   	
     SX1276InitIo( );
 	SX1276Reset( );
-		
-
 	SX1276SetLoRaOn();
 	SX1276LoRaInit( );
 }

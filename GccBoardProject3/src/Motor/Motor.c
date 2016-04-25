@@ -13,18 +13,18 @@
 #include "main.h"
 #include "Motor.h"
 
-#define PID_TUNE	1
-#define P_PITCH		6.0f//2,60//7.60//7.0//6,6
-#define I_PITCH		.1f
-#define D_PITCH		0.07f//0,06//0.1//0.09//0,07
+#define PID_TUNE	0
+#define P_PITCH		5.2f//2,60//7.60//7.0//6,6
+#define I_PITCH		.5f
+#define D_PITCH		0.08f//0,06//0.1//0.09//0,07
 
-#define P_ROLL		1.1f
-#define I_ROLL		0.2f
-#define D_ROLL		1.4f
+#define P_ROLL		4.5f
+#define I_ROLL		0.5f
+#define D_ROLL		0.06f
 
-#define P_YAW		1.1f
-#define I_YAW		0.2f
-#define D_YAW		1.4f
+#define P_YAW		0.9f//.5f
+#define I_YAW		0.01//0.02f
+#define D_YAW		0.01//0.04f
 
 extern	volatile	xQueueHandle		Queue_RF_Task;
 extern volatile	xQueueHandle		Queue_Motor_Task;
@@ -38,8 +38,8 @@ pwm_channel_t pwm_channel_3;
 float	wanted_pitch=0;
 float   wanted_roll=0;
 float	wanted_yaw=0;
-uint16_t	wanted_power=0;
-static filterStatePt1_t PTermState[3], DTermState[3];
+float	wanted_power=0;
+static filterStatePt1_t Filters[10], DTermState[3];
 
 int constrain(int amt, int low, int high)
 {
@@ -82,10 +82,10 @@ void PID_Calculate(Motor_Queue *position,PID_terms *pid)
 	RF_Queue Semtech;
 	int16_t posli[4];
 	
-	volatile float p_p, p_r, p_y;
-	static float integral_p=0, integral_r=0, integral_y=0;
-	float derivative_p, derivative_r, derivative_y;
-	static float prev_error_p=0, prev_error_r=0, prev_error_y=0;
+	volatile float p_p, p_r, p_y,p_alt;
+	static float integral_p=0, integral_r=0, integral_y=0,integral_alt=0;
+	float derivative_p, derivative_r, derivative_y,derivatee_alt;
+	static float prev_error_p=0, prev_error_r=0, prev_error_y=0,prev_error_alt=0;
 	static float  dt=0.001f;
 	static portTickType CurrentTime=0;
 	static portTickType LastTime=0;
@@ -101,11 +101,21 @@ void PID_Calculate(Motor_Queue *position,PID_terms *pid)
 	dt=(float)dt*0.001f;			
 	if(dt<0.001)	dt=0.001;
 	/* P složka */
-	p_p =(float) (wanted_pitch - position->pitch);
-	p_r =(float) (wanted_roll - position->roll);
-	p_y =(float) (wanted_yaw - position->yaw);
 	
-//   	p_p = filterApplyPt1(p_p, &PTermState[0], 20, dt);	//(default 17Hz
+	position->yaw/=2;
+   	position->yaw = filterApplyPt1(position->yaw, &Filters[0], 20, dt);	//(default 17Hz
+	//position->Baro=filterApplyPt1(position->Baro,&Filters[1],10,dt);
+	  
+	wanted_yaw = filterApplyPt1(wanted_yaw, &Filters[2], 15, dt);	//(default 17Hz
+	wanted_roll = filterApplyPt1(wanted_roll, &Filters[3], 50, dt);	//(default 17Hz
+	wanted_pitch = filterApplyPt1(wanted_pitch, &Filters[4], 50, dt);	//(default 17Hz
+	wanted_power = filterApplyPt1(wanted_power, &Filters[5], 50, dt);	//(default 17Hz
+	//position->yaw = filterApplyPt1(wanted_yaw, &Filters[3], 2, dt);	//(default 17Hz
+   //	wanted_power = filterApplyPt1(wanted_power, &PTermState[1], 2, dt);	//(default 17Hz
+	p_p =(float) (wanted_pitch - position->pitch);
+	p_r =(float) (wanted_roll - position->roll)-12;//
+	p_y =(float) (wanted_yaw - position->yaw);
+	p_alt=(float) (wanted_power - position->Baro);
 //   	p_r = filterApplyPt1(p_r, &PTermState[1], 20, dt);	//(default 17Hz
 //   	p_y = filterApplyPt1(p_y, &PTermState[2], 20, dt);	//(default 17Hz
 // 	
@@ -116,8 +126,8 @@ void PID_Calculate(Motor_Queue *position,PID_terms *pid)
 				
 	/* D složka */
 	derivative_p =	(float) -position->Gyro_d[0];//((p_p - prev_error_p)/dt);
-	derivative_r = (float)((p_p - prev_error_p)/dt);//(float)position->Gyro_d[1];//((p_r - prev_error_r)/dt);
-	derivative_y = (float)position->Gyro_d[2];//((p_y - prev_error_y)/dt);
+	derivative_r = (float)-position->Gyro_d[1];//((p_p - prev_error_p)/dt);//(float)position->Gyro_d[1];//((p_r - prev_error_r)/dt);
+	derivative_y = (float)((p_y - prev_error_y)/dt);//-position->Gyro_d[2];//position->Gyro_d[2];//;
 	
 	prev_error_p=p_p;
 	prev_error_r=p_r;
@@ -138,44 +148,44 @@ void PID_Calculate(Motor_Queue *position,PID_terms *pid)
 		
 	
 	pid->pid_sum_p=constrainf((P_PITCH*p_p+I_PITCH*integral_p+D_PITCH*derivative_p),-600,600);
+	pid->pid_sum_r=constrainf((P_ROLL*p_r+I_ROLL*integral_r+D_ROLL*derivative_r),-600,600);
+	pid->pid_sum_y=constrainf((P_YAW*p_y+I_YAW*integral_y+D_YAW*derivative_y),-600,600);
 	//pid->pid_sum_p=filterApplyPt1(pid->pid_sum_p, &DTermState[0], 17, dt);
 	ioport_set_pin_level(PERIODE_PIN,false);
 	
 	//posli[1]=(int16_t)derivative_p;
-#if (PID_TUNE==1)
+//#if (PID_TUNE==1)
 
 	/* posli do matlabu */
-	posli[0]=(int16_t)position->pitch;//(P_PITCH*p_p);//+pid->I_p+pid->D_p
-	posli[1]=(int16_t)(I_PITCH*integral_p);
-	posli[2]=(int16_t)(D_PITCH*derivative_p);
-	posli[3]=(int16_t)position->pitch;
-	
-	Semtech.Buffer[0]=(uint8_t)posli[0];	//LOW
-	Semtech.Buffer[1]=(uint8_t)(posli[0]>>8);		//HIGH
-	Semtech.Buffer[2]=(uint8_t) posli[1];
-	Semtech.Buffer[3]=(uint8_t) (posli[1]>>8);
-	Semtech.Buffer[4]=(uint8_t) posli[2];
-	Semtech.Buffer[5]=(uint8_t)( posli[2]>>8);
-	Semtech.Buffer[6]=(uint8_t) posli[3];
-	Semtech.Buffer[7]=(uint8_t)( posli[3]>>8);
-	
-	
-
-	Semtech.Stat.Data_State=RFLR_STATE_TX_INIT;
-	Semtech.Stat.Cmd=STAY_IN_STATE;
+//  	posli[0]=(int16_t)position->Baro;//(P_PITCH*p_p);//+pid->I_p+pid->D_p
+//  	posli[1]=(int16_t)0;//;(I_PITCH*integral_p);
+//  	posli[2]=(int16_t)0;//;(D_PITCH*derivative_p);
+//  	posli[3]=(int16_t)0;//;position->pitch;
+//  	
+//  	Semtech.Buffer[0]=(uint8_t)posli[0];	//LOW
+//  	Semtech.Buffer[1]=(uint8_t)(posli[0]>>8);		//HIGH
+//  	Semtech.Buffer[2]=(uint8_t) posli[1];
+//  	Semtech.Buffer[3]=(uint8_t) (posli[1]>>8);
+//  	Semtech.Buffer[4]=(uint8_t) posli[2];
+//  	Semtech.Buffer[5]=(uint8_t)( posli[2]>>8);
+//  	Semtech.Buffer[6]=(uint8_t) posli[3];
+//  	Semtech.Buffer[7]=(uint8_t)( posli[3]>>8);
+//  	
+//  	Semtech.Stat.Data_State=RFLR_STATE_TX_INIT;
+//  	Semtech.Stat.Cmd=STAY_IN_STATE;
 	/* Send data to Matlab */
 
- 	for (uint8_t i=0;i<2;i++)
- 	{
- 		usart_putchar((Usart*)UART1,Semtech.Buffer[0+i]);
- 	}
-// 	if(xQueueSend(Queue_RF_Task,&Semtech,1)==pdPASS)	//pdPASS=1-
-// 	{
-// 		
-// 	}
+//    	for (uint8_t i=0;i<2;i++)
+//    	{
+//    		usart_putchar((Usart*)UART1,Semtech.Buffer[0+i]);
+//     	}
+//  	if(xQueueSend(Queue_RF_Task,&Semtech,1)==pdPASS)	//pdPASS=1-
+//  	{
+//  		
+//  	}
 
 	
-#endif
+//#endif
 
 }
 
@@ -193,27 +203,27 @@ void Motor_Update(Motor_Queue *position,PID_terms *pid)
 	int16_t Final_M4=0;
 	
 	/* PITCH */
-  	Power_M1+=-(int16_t)(pid->pid_sum_p);//++pid->I_p+pid->D_p)
-  	Power_M3+=Power_M1;
-  	Power_M2+=-Power_M1;
-   	Power_M4+=-Power_M1;
-	
-	
-	/* ROLL */
-//  	Power_M1+=+(float)(P_ROLL*pid->P_r+I_ROLL*pid->I_r+D_ROLL*pid->D_p);//);//+pid->I_p+pid->D_p;
-//  	Power_M2+=Power_M1;
-//  	Power_M3+=-Power_M1;
-//  	Power_M4+=-Power_M1;
+    Power_M1+=(int16_t)(pid->pid_sum_r-pid->pid_sum_p-pid->pid_sum_y);//++pid->I_p+pid->D_p)
+    Power_M3+=(int16_t)(-pid->pid_sum_r-pid->pid_sum_p+pid->pid_sum_y);
+    Power_M2+=(int16_t)(pid->pid_sum_r+pid->pid_sum_p+pid->pid_sum_y);
+    Power_M4+=(int16_t)(-pid->pid_sum_r+pid->pid_sum_p-pid->pid_sum_y);
+// 	
+// 	
+// 	/* ROLL */
+//    	Power_M1+=+(int16_t)(pid->pid_sum_r);//);//+pid->I_p+pid->D_p;
+//    	Power_M2+=Power_M1;
+//    	Power_M3+=-Power_M1;
+   	//Power_M4+=-Power_M1;
+// 	 
+// 	 /*YAW */
+//  	 Power_M1+=+(int16_t)(pid->pid_sum_y);//);//+pid->I_p+pid->D_p;+I_ROLL*pid->I_r+D_ROLL*pid->D_p
+//  	 Power_M4+=Power_M1;
+//  	 Power_M3+=-Power_M1;
+//  	 Power_M2+=-Power_M1;
 	 
-	 /*YAW */
-// 	 Power_M1+=+(float)(P_ROLL*pid->P_r);//);//+pid->I_p+pid->D_p;+I_ROLL*pid->I_r+D_ROLL*pid->D_p
-// 	 Power_M4+=Power_M1;
-// 	 Power_M3+=-Power_M1;
-// 	 Power_M2+=-Power_M1;
-	 
-//#if (PID_TUNE==1)
+#if (PID_TUNE==1)
 	wanted_power=130;
-//#endif	
+#endif	
 	
 	/* offset na plynové páèce - mrtvá zona */
 	if (wanted_power>10)
@@ -263,7 +273,6 @@ void Motor_Update(Motor_Queue *position,PID_terms *pid)
 	pwm_channel_enable(PWM, 1);
 	pwm_channel_enable(PWM, 2);
 	pwm_channel_enable(PWM, 3);
-	
 	
 
 		
@@ -405,8 +414,13 @@ void PWM_init(void)
 	Motor_Queue Position;
 	PID_terms	Pid;
 	uint16_t y0_output=0;
+	/*expo*/
+	uint8_t		k=2;
+	uint8_t first_RX=1;
+	int16_t offset[4];
 	/* PWM inicializace */ 
  	PWM_init();
+	
 	
 	while(1)
 	{
@@ -420,14 +434,50 @@ void PWM_init(void)
 
  			}
  			else if(Position.type_of_data==FROM_TX)
- 			{
-  				wanted_power=(uint16_t)((-0.89f*Position.TX_CH_xx[3])+2680);
- 				 if (wanted_power>900) wanted_power=900;
- 				 if (wanted_power<10) wanted_power=10;
- 				
- 				wanted_pitch=(float)(Position.TX_CH_xx[2]*(-0.09f)+225);
- 				wanted_roll=(float)(Position.TX_CH_xx[1]*(-0.09f)+225);
- 				wanted_yaw=(float)(Position.TX_CH_xx[0]*0.09f-225);
+ 			{	
+				 
+				 
+				if (first_RX==1)
+				{	
+					offset[0]=2500-Position.TX_CH_xx[0];
+					offset[1]=2500-Position.TX_CH_xx[1];
+					offset[2]=2500-Position.TX_CH_xx[2];
+					offset[3]=3010-Position.TX_CH_xx[3];
+					
+					first_RX=0;
+				}
+					
+					Position.TX_CH_xx[0]+=offset[0];
+					Position.TX_CH_xx[1]+=offset[1];
+					Position.TX_CH_xx[2]+=offset[2];
+					Position.TX_CH_xx[3]+=offset[3];
+					
+					wanted_power=(float)(Position.TX_CH_xx[3]*(-0.001f)+3.0f);
+					wanted_power=(float)(2.702f*wanted_power*wanted_power*wanted_power-3.7582f*wanted_power*wanted_power+2.096f*wanted_power-0.0542f);
+					wanted_power=(float)((wanted_power*900));
+					if (wanted_power>900) wanted_power=900;
+					if (wanted_power<1) wanted_power=1;
+					
+					
+					 
+					 /* Pøevod na +- 1*/
+					 wanted_pitch=(float)(Position.TX_CH_xx[2]*(-0.002f)+5);
+					 wanted_roll=(float)((Position.TX_CH_xx[0]*(-0.002f)+5));	
+					 wanted_yaw=(float)(Position.TX_CH_xx[1]*(-0.002f)+5);
+					 /*pøevod na expo +-1  z +-1 */
+					 wanted_pitch=(float)((wanted_pitch*wanted_pitch*wanted_pitch*(k-1)+wanted_pitch)/k);
+					 wanted_roll=(float)((wanted_roll*wanted_roll*wanted_roll*(k-1)+wanted_roll)/k);
+					// wanted_yaw=(float)((wanted_yaw*wanted_yaw*wanted_yaw*(1-1)+wanted_yaw)/1);
+					 /* pøevod na +-45 z +-1*/
+					 wanted_pitch=(float)(wanted_pitch*45);
+					 wanted_roll=(float)((wanted_roll*45));//odeèitam konstatni 4 stupne kvuli baterce - zatez
+					 
+					 wanted_pitch=constrainf(wanted_pitch,-45,45);
+					 wanted_roll=constrainf(wanted_roll,-45,45);
+					 
+					 /* pøevod na w rychlost +- 1000 z expo */
+					 wanted_yaw=(float)(wanted_yaw*1000);
+				
 		
  			}
  			

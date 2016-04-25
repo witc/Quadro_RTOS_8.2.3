@@ -470,7 +470,7 @@ void MPU6050_ReadBit(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitNum, uint8_t
 
 void MPU6050_I2C_Init(void);
 uint32_t MPU6050_I2C_ByteWrite(uint8_t slaveAddr, uint8_t* pBuffer, uint8_t writeAddr);
-uint32_t MPU6050_I2C_BufferRead(uint8_t slaveAddr,uint8_t* pBuffer, uint8_t readAddr, short NumByteToRead);
+uint32_t MPU9250_BufferRead(uint8_t slaveAddr,uint8_t* pBuffer, uint8_t readAddr, short NumByteToRead);
 void MPU9150_getMotion9(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz, int16_t* mx, int16_t* my, int16_t* mz);
 short MPU9150_getMotion_fifo(uint8_t* FIFO_MPU);
 void MPU9150_getMotion6(short* ax, short* ay, short* az, short* gx, short* gy, short* gz,short *offset);

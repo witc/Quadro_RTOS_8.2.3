@@ -44,13 +44,13 @@ void Semtech_IRQ0(void)
 	
 	signed portBASE_TYPE xHigherPriorityTaskWoken;
 	xHigherPriorityTaskWoken=pdTRUE;	//pøerušení se dokonèí celé= pdFalse
-	pio_disable_interrupt(PIOA, PIO_PA18);
+	//pio_disable_interrupt(PIOA, PIO_PA18);
 	
 	Semtech.Stat.Cmd=STAY_IN_STATE;
 	Semtech.Stat.Data_State=Check_status(0);
 	//xTaskResumeFromISR(Sx1276_id);
 	//while(xQueueSendToBackFromISR(Queue_RF_Task,&Semtech,&xHigherPriorityTaskWoken)!=pdTRUE);	//lepší používat Back..
-	 pio_enable_interrupt(PIOA, PIO_PA18);
+	 //pio_enable_interrupt(PIOA, PIO_PA18);
 	xQueueSendToBackFromISR(Queue_RF_Task,&Semtech,&xHigherPriorityTaskWoken);
 	
 	
@@ -66,11 +66,11 @@ void Semtech_IRQ1(void)
 	signed portBASE_TYPE xHigherPriorityTaskWoken;
 	xHigherPriorityTaskWoken=pdTRUE;	//pøerušení se dokonèí celé= pdFalse
 	
-	pio_disable_interrupt(PIOA, PIO_PA17);
+	//pio_disable_interrupt(PIOA, PIO_PA17);
 	
 	Semtech.Stat.Cmd=STAY_IN_STATE;
 	Semtech.Stat.Data_State=Check_status(1);
-	pio_enable_interrupt(PIOA, PIO_PA17);
+	//pio_enable_interrupt(PIOA, PIO_PA17);
 	
 	xQueueSendToBackFromISR(Queue_RF_Task,&Semtech,&xHigherPriorityTaskWoken);
 	
@@ -449,7 +449,7 @@ void Rf_mode(RF_Queue *Sem_in)
 		case RFLR_STATE_TX_DONE:
 			
 			TX_READY=1;
-			ioport_toggle_pin_level(LEDR);
+			ioport_toggle_pin_level(LEDW);
 		
 			SX1276Write( REG_LR_IRQFLAGS, RFLR_IRQFLAGS_TXDONE  );	
 			// optimize the power consumption by switching off the transmitter as soon as the packet has been sent

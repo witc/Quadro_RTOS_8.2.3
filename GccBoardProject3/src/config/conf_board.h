@@ -22,7 +22,12 @@
 #define SX1276_NIRQ0_PIN		PIO_PA18_IDX // IN
 #define SX1276_NIRQ1_PIN		PIO_PA17_IDX // IN
 
-/*  Compass */
+
+//ADNS - 3080
+#define ADNS_CS_PIN			PIO_PA10_IDX // OUT
+#define ADNS_RESET_PIN		PIO_PC25_IDX // OUT
+
+/*  MPU */
 #define I2C_SCL_PIN				PIO_PA4_IDX
 #define I2C_SDA_PIN				PIO_PA3_IDX
 #define EXT1_TWI_SDA_MUX			1
@@ -34,7 +39,7 @@
 #define TWI0_CLK_FLAGS   (PIO_PERIPH_A | PIO_PULLUP)
 
 //Measure Periode
-#define PERIODE_PIN				PIO_PA21_IDX
+#define PERIODE_PIN				PIO_PC24_IDX
 #define PERIODE_PIN_INT			PIO_PC27_IDX
 
 /* PWM motors*/
@@ -46,9 +51,15 @@
 
 /* LED */
 #define LEDW					PIO_PB1_IDX
-#define LEDR					PIO_PA10_IDX
+#define LEDR					PIO_PB5_IDX
+#define LED0					PIO_PC23_IDX
 //#define LEDG					PIO_PB2_IDX
 
+//GPS
+#define GPS_RX_PIN			    PIO_PA21_IDX
+#define GPS_TX_PIN		        PIO_PA22_IDX
+#define GPS_RESET_PIN		    PIO_PC26_IDX
+#define GPS_USART				USART1
 
 /** SPI MISO pin definition. */
 #define SPI_MISO_GPIO         (PIO_PA12_IDX)

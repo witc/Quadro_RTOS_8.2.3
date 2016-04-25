@@ -31,6 +31,7 @@
 #include <asf.h>
 #include <ioport.h>
 
+extern struct spi_device device_rf;
 
 uint8_t SpiInOut(uint8_t Data);
 
@@ -108,7 +109,7 @@ void SX1276Read( uint8_t addr, uint8_t *data )
 void SX1276WriteBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 {
      
-//	taskENTER_CRITICAL();
+	taskENTER_CRITICAL();
 	//spi_set_peripheral_chip_select_value(SPI, 1);	//pridano
 	
 	spi_select_device(SPI, &device_rf);
@@ -119,7 +120,7 @@ void SX1276WriteBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 	
 	spi_deselect_device(SPI, &device_rf);
 //	ioport_set_pin_level(SX1276_CS_PIN, true);
- 	//taskEXIT_CRITICAL();
+ 	taskEXIT_CRITICAL();
 		
 
 }
@@ -127,7 +128,7 @@ void SX1276WriteBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 void SX1276ReadBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 {
    
- //	taskENTER_CRITICAL();
+ 	taskENTER_CRITICAL();
 	//spi_set_peripheral_chip_select_value(SPI, 1);	//pridano
     
 	//ioport_set_pin_level(SX1276_CS_PIN, false);
@@ -139,7 +140,7 @@ void SX1276ReadBuffer( uint8_t addr, uint8_t *buffer, uint8_t size )
 	//ioport_set_pin_level(SX1276_CS_PIN, true);
 	spi_deselect_device(SPI, &device_rf);
 	
- //	taskEXIT_CRITICAL();
+ 	taskEXIT_CRITICAL();
 	
 }
 

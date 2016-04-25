@@ -331,7 +331,7 @@ uint32_t twi_master_write(Twi *p_twi, twi_packet_t *p_packet)
 	uint32_t status;
 	uint32_t cnt = p_packet->length;
 	uint8_t *buffer = p_packet->buffer;
-
+	
 	/* Check argument */
 	if (cnt == 0) {
 		return TWI_INVALID_ARGUMENT;

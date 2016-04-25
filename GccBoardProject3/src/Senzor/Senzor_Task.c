@@ -14,6 +14,8 @@
 #include "MPU_9150.h"
 #include "FreeRTOS_V_8_Header.h"
 #include "Periph_init.h"
+#include "MPL3115A2.h"
+#include "Mag.h"
 
 
 /** PWM frequency in Hz */
@@ -32,6 +34,10 @@ extern	volatile	xQueueHandle		Queue_RF_Task;
 extern volatile	 xQueueHandle		Queue_Senzor_Task;
 extern volatile	xQueueHandle		Queue_Motor_Task;
 
+volatile xTimerHandle Baro_Timer;
+volatile xTimerHandle Mag_Timer;
+
+
 extern Pdc *twi_dma_inst;
 extern pdc_packet_t twi_dma_packet;
 uint8_t GL_buffer_mpu_9150[14];
@@ -41,6 +47,45 @@ volatile short offset[3]={0,0,0};
 	
 void Gyro_Angle(short g_x,short g_y,short g_z,EulerAngles *uhly,float dt);
 void Akce_Angle(short a_x, short a_y, short a_z,EulerAngles *uhly);
+
+void Mag_TimerCallback(xTimerHandle pxTimer)
+{
+	Senzor_Queue Data_Queue_MAG;
+	signed portBASE_TYPE xHigherPriorityTaskWoken;
+	xHigherPriorityTaskWoken=pdTRUE;	//pøerušení se dokonèí celé= pdFalse
+	
+	
+	if(Mag_get_b(Data_Queue_MAG.mag)==0)
+	{
+		Data_Queue_MAG.senzor_type=MAG_TYPE;
+		//Data_Queue_BARO.Vycti_data=1;
+		xQueueSendToBackFromISR(Queue_Senzor_Task,&Data_Queue_MAG,&xHigherPriorityTaskWoken);
+		//pio_enable_interrupt(PIOB, PIO_PB0);
+		
+		if (xHigherPriorityTaskWoken==pdTRUE) portYIELD();
+		
+	}
+}
+
+void Baro_TimerCallback(xTimerHandle pxTimer)
+{	
+	Senzor_Queue Data_Queue_BARO;
+	signed portBASE_TYPE xHigherPriorityTaskWoken;
+	xHigherPriorityTaskWoken=pdTRUE;	//pøerušení se dokonèí celé= pdFalse
+	uint8_t data=0;
+	
+	if(Baro_get_preasure(Data_Queue_BARO.baro)==0)
+	{	
+		Data_Queue_BARO.senzor_type=BARO_TYPE;
+	 	//Data_Queue_BARO.Vycti_data=1;
+	 	xQueueSendToBackFromISR(Queue_Senzor_Task,&Data_Queue_BARO,&xHigherPriorityTaskWoken);
+	 	//pio_enable_interrupt(PIOB, PIO_PB0);
+	 	
+	 	if (xHigherPriorityTaskWoken==pdTRUE) portYIELD();
+		 
+	}
+}
+
 
 
 void TWI0_Handler(void)
@@ -79,25 +124,26 @@ void TWI0_Handler(void)
 void MPU9150_INT(void)
 {	
 	//NVIC_ClearPendingIRQ(PIOB_IRQn);
-	MPU9150_Queue Data_Queue_MPU;
+	Senzor_Queue Data_Queue_MPU;
 	signed portBASE_TYPE xHigherPriorityTaskWoken;
 	xHigherPriorityTaskWoken=pdTRUE;	//pøerušení se dokonèí celé= pdFalse
 	uint8_t data=0;
 	
 				
-	pio_disable_interrupt(PIOB, PIO_PB0);
+	//pio_disable_interrupt(PIOB, PIO_PB0);
 //	pio_disable_interrupt(PIOA, PIO_PB0);
 	
-	MPU6050_I2C_BufferRead(MPU6050_DEFAULT_ADDRESS,Data_Queue_MPU.MPU_FIFO,MPU6050_RA_ACCEL_XOUT_H, 14);
+	//MPU6050_I2C_BufferRead(MPU6050_DEFAULT_ADDRESS,Data_Queue_MPU.MPU_FIFO,MPU6050_RA_ACCEL_XOUT_H, 14);
 // 	if(MPU6050_I2C_BufferRead(MPU6050_DEFAULT_ADDRESS,Data_Queue_MPU.MPU_FIFO,MPU6050_RA_ACCEL_XOUT_H, 14)!=TWI_SUCCESS)
 // 	{
 // 		usart_write_line((Usart*)UART1,"Reading buffer data false FALSE...\n");
 // 		NVIC_SystemReset();
 // 	}
-// 		
+	
+	Data_Queue_MPU.senzor_type=MPU_TYPE;				
 	Data_Queue_MPU.Vycti_data=1;
 	xQueueSendToBackFromISR(Queue_Senzor_Task,&Data_Queue_MPU,&xHigherPriorityTaskWoken);
-	pio_enable_interrupt(PIOB, PIO_PB0);
+	//pio_enable_interrupt(PIOB, PIO_PB0);
 	
 	if (xHigherPriorityTaskWoken==pdTRUE) portYIELD();
     //MPU9150_getMotion_dma(NULL);
@@ -219,14 +265,13 @@ void Akce_Angle(short a_x, short a_y, short a_z,EulerAngles *uhly)
 
 void Senzor_Task(void *pvParameters)
 {	
-	MPU9150_Queue Senzor;
+	Senzor_Queue Senzor;
 	//MPU9150_Buffer XYZ;
 	Motor_Queue Position;
 	RF_Queue Semtech;
 	
-// 	EulerAngles Angles;
+	 MAG_XYZ MAG;
  	EulerAngles Angles_A;
-// 	EulerAngles Angles_G;
 	portTickType CurrentTime;
 	portTickType LastTime;
 	
@@ -236,7 +281,8 @@ void Senzor_Task(void *pvParameters)
 	static float uhel[3];
 	float f_temp[3];
 	uint16_t packet_count=0;
-		
+	
+	float baro_meas=0;
  	short GyroXYZ[30];
  	short MagXYZ[3];
 	short AccXYZ[30];
@@ -254,36 +300,125 @@ void Senzor_Task(void *pvParameters)
 	uint16_t save_count=0;
 	uint8_t buffer[14];
 	uint16_t temp[12];
-		
+	
+	//taskEXIT_CRITICAL();
 	MPU6050_Initialize();
-	//MPU9150_Gyro_Tempr_Bias_no_fifo(offset);
-	offset[0]=-44;
-	offset[1]=-13;
-	offset[2]=22;
+	//taskEXIT_CRITICAL();
+//	MPU9150_Gyro_Tempr_Bias_no_fifo(offset);
+ 	offset[0]=-5;
+ 	offset[1]=1;
+ 	offset[2]=3;
 	
 	interrupt_init();
 
 	CurrentTime=xTaskGetTickCount();
 	LastTime=xTaskGetTickCount();
 	
+	/* BAro_init*/
+	/*reset */
+// 	uint8_t tmp= MPL3115A2_CTRL_REG1_RST;
+// 	Baro_send(MPL3115A2_CTRL_REG1,&tmp,1);
+// 	vTaskDelay(10/portTICK_RATE_MS);
+		
+//	Baro_init();
+	float baro_offset=0;
+	float last_pressure=0;
+	float pressure=0;
+	float diff_pressure=0;
+	//Baro_Calibrate(&baro_offset);
+	//Baro_init();
+	
+	/*Reading Baro */
+//  	Baro_Timer=xTimerCreate("Timer_Baro",(10/portTICK_RATE_MS),pdTRUE,0,Baro_TimerCallback);
+//  	if(xTimerStart(Baro_Timer,0)!=pdPASS){}
+	
+	//Mag_init();	
+		
+// 	if(Kalibrace.Kalibrace==ON)
+// 	{
+ 		//Calibrate_Comp(&MAG);
+// 	}		
+		
+	MAG.Nasobek1=0.989999999;
+	MAG.Nasobek2=1.0673854;
+	MAG.X_Offset=-29;
+	MAG.Y_Offset=-50;
+	MAG.Z_Offset=51;
+		 
+	Mag_Timer=xTimerCreate("Mag_Timer",(20/portTICK_RATE_MS),pdTRUE,0,Mag_TimerCallback);
+	if(xTimerStart(Mag_Timer,0)!=pdPASS){}
+		
+		
 for (;;)
 {	
 	
 		if(xQueueReceive(Queue_Senzor_Task,&Senzor,portMAX_DELAY)==pdPASS)
 		{	
- 			if (Senzor.Vycti_data==1)
+			
+			if(Senzor.senzor_type==MAG_TYPE)
+			{	
+				MAG.X=((short)((Senzor.mag[0]<<8) | Senzor.mag[1])-MAG.X_Offset);//);//+X_Offset;-30
+				MAG.Y=((short)((Senzor.mag[2]<<8) | Senzor.mag[3])-MAG.Y_Offset);//);//+Y_Offset;-49
+				MAG.Z=((short)((Senzor.mag[4]<<8) | Senzor.mag[5])-MAG.Z_Offset);//);-49
+				MAG.Y*=( MAG.Nasobek1);//0.997536;
+				MAG.Z*=( MAG.Nasobek2);//1.074;
+				 
+				Get_Filtered_Heading(uhel[0],uhel[1],&MAG,&buffer);
+				
+			}			
+			else if(Senzor.senzor_type==BARO_TYPE)
+			{
+				 /* Get altitude, the 20-bit measurement in meters is comprised of a signed integer component and
+				   a fractional component. The signed 16-bit integer component is located in OUT_P_MSB and OUT_P_CSB.
+				   The fraction component is located in bits 7-4 of OUT_P_LSB. Bits 3-0 of OUT_P_LSB are not used */
+				   //baro_meas = (float) ((short) (((Senzor.baro[0] << 8)) | Senzor.baro[1])) + (float) (Senzor.baro[2] >> 4) * 0.0625;
+				 
+			   
+			   last_pressure = pressure;
+			   pressure = (float)(Senzor.baro[2])*0.005 + 0.995*pressure;
+			   
+			   diff_pressure = last_pressure - pressure;
+			   
+				   
+				  // baro_meas=44330*(1-pow())
+					//baro_meas=baro_meas-baro_offset;
+					///* Get pressure, the 20-bit measurement in Pascals is comprised of an unsigned integer component and a fractional component.
+					//The unsigned 18-bit integer component is located in OUT_P_MSB, OUT_P_CSB and bits 7-6 of OUT_P_LSB.
+					//The fractional component is located in bits 5-4 of OUT_P_LSB. Bits 3-0 of OUT_P_LSB are not used.*/
+					 //
+				//	baro_meas = (float) (((Senzor.baro[2] << 16) | (Senzor.baro[1] << 8) | (Senzor.baro[0] & 0xC0)) >> 6) + (float) ((Senzor.baro[0] & 0x30) >> 4) * 0.25;
+// 					uint32_t tlak=0;
+// 					tlak=(uint16_t)baro_meas;
+// 					Semtech.Buffer[0]=(uint8_t)tlak;	//LOW
+// 					Semtech.Buffer[1]=(uint8_t)(tlak>>8);		//HIGH
+// 					Semtech.Buffer[2]=(uint8_t) (tlak>>16);
+// 					Semtech.Buffer[3]=(uint8_t)0;// (temp[1]>>8);
+// 					Semtech.Buffer[4]=(uint8_t) 0;
+// 					Semtech.Buffer[5]=(uint8_t)( 0);
+// 					Semtech.Buffer[6]=(uint8_t) temp[3];
+// 					Semtech.Buffer[7]=(uint8_t)( temp[3]>>8);
+// 					
+// 					Semtech.Stat.Data_State=RFLR_STATE_TX_INIT;
+// 					Semtech.Stat.Cmd=STAY_IN_STATE;
+// 					/* Send data to Matlab */
+// 					if(xQueueSend(Queue_RF_Task,&Semtech,1))	//pdPASS=1-
+// 					{
+// 						
+// 					}
+			}
+ 			else if ((Senzor.Vycti_data==1)&&(Senzor.senzor_type==MPU_TYPE))
  			{
 			//	ioport_set_pin_level(PERIODE_PIN,false);
 				
-			//	MPU6050_I2C_BufferRead(MPU6050_DEFAULT_ADDRESS,buffer,MPU6050_RA_ACCEL_XOUT_H, 14);
+				MPU9250_BufferRead(MPU6050_DEFAULT_ADDRESS,buffer,MPU6050_RA_ACCEL_XOUT_H, 14);
 
-				AccXYZ[0]=(((short)(Senzor.MPU_FIFO[0]) << 8 ) | Senzor.MPU_FIFO[1]);
-				AccXYZ[1]=(((short)(Senzor.MPU_FIFO[2]) << 8 ) | Senzor.MPU_FIFO[3]);
-				AccXYZ[2]=(((short)(Senzor.MPU_FIFO[4]) << 8 ) | Senzor.MPU_FIFO[5]);
+				AccXYZ[0]=(((short)(buffer[0]) << 8 ) | buffer[1]);
+				AccXYZ[1]=(((short)(buffer[2]) << 8 ) | buffer[3]);
+				AccXYZ[2]=(((short)(buffer[4]) << 8 ) | buffer[5]);
 			
-				GyroXYZ[0]=(((short)(Senzor.MPU_FIFO[8]) << 8 ) | Senzor.MPU_FIFO[9])-offset[0];
-				GyroXYZ[1]=(((short)(Senzor.MPU_FIFO[10]) << 8 ) | Senzor.MPU_FIFO[11])-offset[1];
-				GyroXYZ[2]=(((short)(Senzor.MPU_FIFO[12]) << 8 ) | Senzor.MPU_FIFO[13])-offset[2];
+				GyroXYZ[0]=(((short)(buffer[8]) << 8 ) | buffer[9])-offset[0];
+				GyroXYZ[1]=(((short)(buffer[10]) << 8 ) | buffer[11])-offset[1];
+				GyroXYZ[2]=(((short)(buffer[12]) << 8 ) | buffer[13])-offset[2];
 				
 // 				AccXYZ[0]=(((short)(buffer[0]) << 8 ) | buffer[1]);
 // 				AccXYZ[1]=(((short)(buffer[2]) << 8 ) | buffer[3]);
@@ -303,8 +438,7 @@ for (;;)
 				
  				uhel[0] =CONST_FILTER*(uhel[0]+(float)(GyroXYZ[0]*0.06103515f*dt)) + (1-CONST_FILTER)*Angles_A.pitch;
  				uhel[1] =CONST_FILTER*(uhel[1]+(float)(GyroXYZ[1]*0.06103515f*dt)) + (1-CONST_FILTER)*Angles_A.roll;
- 				uhel[2] +=(float)(GyroXYZ[2]*0.06103515f*dt);
-				 
+ 				//uhel[2] +=(float)(GyroXYZ[2]*0.06103515f*dt);
 				
 				//
 				//uhel[2]=(float)(4*AccXYZ[0]/65535);
@@ -320,15 +454,15 @@ for (;;)
 #elif (TX_TO_MATLAB==1)
 			
 // 			temp[0]=(short)(uhel[0]);//GyroXYZ[0];
-// 			temp[1]=(short)(uhel[1]);//GyroXYZ[1];
-// 			temp[2]=(short)(uhel[2]);//GyroXYZ[2];//
+// 			temp[1]=(short)0;//(uhel[1]);//GyroXYZ[1];
+// 			temp[2]=(short)0;//(uhel[2]);//GyroXYZ[2];//
 // 			
-// 			Semtech.Buffer[0]=(uint8_t)temp[0];	//LOW
-// 			Semtech.Buffer[1]=(uint8_t)(temp[0]>>8);		//HIGH
-// 			Semtech.Buffer[2]=(uint8_t) temp[1];
-// 			Semtech.Buffer[3]=(uint8_t) (temp[1]>>8);
-// 			Semtech.Buffer[4]=(uint8_t) temp[2];
-// 			Semtech.Buffer[5]=(uint8_t)( temp[2]>>8);
+// 			Semtech.Buffer[0]=(uint8_t)baro_meas;	//LOW
+// 			Semtech.Buffer[1]=(uint8_t)(baro_meas>>8);		//HIGH
+// 			Semtech.Buffer[2]=(uint8_t) (baro_meas>>16);
+// 			Semtech.Buffer[3]=(uint8_t)0;// (temp[1]>>8);
+// 			Semtech.Buffer[4]=(uint8_t) 0;
+// 			Semtech.Buffer[5]=(uint8_t)( 0);
 // 			Semtech.Buffer[6]=(uint8_t) temp[3];
 // 			Semtech.Buffer[7]=(uint8_t)( temp[3]>>8);
 // 			
@@ -352,12 +486,13 @@ for (;;)
 //   			}
  			 
 			/* Send new position to motor task */
-			Position.pitch=(float)GyroXYZ[0];//uhel[0];
+			Position.pitch=(float)uhel[0];
 			Position.roll=(float)uhel[1];
-			Position.yaw=(float)uhel[2];
+			Position.yaw=(float)-GyroXYZ[2];
 			Position.Gyro_d[0]=GyroXYZ[0];
 			Position.Gyro_d[1]=GyroXYZ[1];
 			Position.Gyro_d[2]=GyroXYZ[2];
+			Position.Baro=baro_meas;
 				
  			Position.type_of_data=FROM_SENZOR;		
  			if(xQueueSend(Queue_Motor_Task,&Position,1))	//pdPASS=1-

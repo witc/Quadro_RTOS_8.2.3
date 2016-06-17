@@ -10,8 +10,10 @@
 #define MPU_9150_HAL_H_
 
 
-uint32_t MPU_9150_send(unsigned char Adress, unsigned char *Data, unsigned char Length);
-uint32_t MPU_9150_read(unsigned char Adress, unsigned char *Data, short Length);
+uint32_t MPU_9150_send(unsigned char Adress, unsigned char Length, unsigned char *Data);
+uint32_t MPU_9150_read(unsigned char Adress, short Length, unsigned char *Data);
+uint32_t MPU_9150_send_mag(unsigned char Adress, unsigned char Length, unsigned char *Data);
+uint32_t MPU_9150_read_mag(unsigned char Adress, unsigned char Length, unsigned char *Data);
 
 
 

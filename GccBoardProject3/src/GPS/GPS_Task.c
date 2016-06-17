@@ -15,6 +15,7 @@
 
 
 extern	volatile	xQueueHandle		Queue_GPS;
+extern volatile	 xQueueHandle		    Queue_Senzor_Task;
 
 
 void USART1_Handler(void)
@@ -264,6 +265,11 @@ void GPS_Task(void *pvParameters)
 	GPS_COMP_DATA_t sCOMP_Data;
 	float HDOP=0;
 	uint32_t temp_HDOP=0;
+	uint32_t temp_GPS_ALT=0;
+	
+	
+	Senzor_Queue Data_Queue_GPS;
+	
 	
 	for (;;)
 	{	
@@ -293,15 +299,24 @@ void GPS_Task(void *pvParameters)
 							GPGGA_Decode(&DataToGPS,&GPS_data_decode);
 							Coordinates_calc(&GPS_data_decode.Latitude,&GPS_data_decode.Longitude,&Slave_Last);
 							GPS_Utils_CalcDisAndBear(&Master_Last,&Slave_Last,&sCOMP_Data);
-							temp_HDOP=(GPS_data_decode.HDOP[0]-'0')*100+(GPS_data_decode.HDOP[1]-'0')*10+(GPS_data_decode.HDOP[2]-'0');
+							temp_HDOP=(GPS_data_decode.HDOP[0]-'0')*100+(GPS_data_decode.HDOP[2]-'0')*10+(GPS_data_decode.HDOP[3]-'0');
 							HDOP=(float)temp_HDOP/100;
- 							if (HDOP<1)
+ 							if (HDOP<2)
  							{
 								 ioport_toggle_pin_level(LED0);
  							}
-						
-								
-						
+							
+							temp_GPS_ALT=(GPS_data_decode.Altitude[0]-'0')*1000+(GPS_data_decode.Altitude[1]-'0')*100+(GPS_data_decode.Altitude[2]-'0')*10+(GPS_data_decode.Altitude[4]-'0');
+							//temp_GPS_ALT/=10;
+							
+							Data_Queue_GPS.gps_alt=(float)(temp_GPS_ALT/10);
+ 							Data_Queue_GPS.senzor_type=GPS_TYPE;
+// 							Data_Queue_GPS.gps_alt[0]=(GPS_data_decode.Altitude[0]-'0');
+// 							Data_Queue_GPS.gps_alt[1]=(GPS_data_decode.Altitude[1]-'0');
+// 							Data_Queue_GPS.gps_alt[2]=(GPS_data_decode.Altitude[2]-'0');
+// 							Data_Queue_GPS.gps_alt[3]=(GPS_data_decode.Altitude[4]-'0');
+							xQueueSend(Queue_Senzor_Task,&Data_Queue_GPS,portMAX_DELAY);
+							
 							break;
 						
 						case GPTXT:

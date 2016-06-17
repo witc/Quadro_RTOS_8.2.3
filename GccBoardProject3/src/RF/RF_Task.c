@@ -85,7 +85,6 @@ void Semtech_IRQ1(void)
 void RX_done_LR(RF_Queue *Semtech,short *crc)
 {	
 	static short RxPacketSize = 0;
-	static double RxPacketRssiValue;
 	static uint8_t RFBuffer[RF_BUFFER_SIZE];
 	Motor_Queue Position;
 
@@ -112,7 +111,7 @@ void RX_done_LR(RF_Queue *Semtech,short *crc)
 		//ioport_toggle_pin(LED_OK);
 		ioport_toggle_pin_level(LEDW);
 		
-		RxPacketRssiValue=SX1276LoRaReadRssi();
+		//RxPacketRssiValue=SX1276LoRaReadRssi();
 		
 		if( LoRaSettings.RxSingleOn == true ) // Rx single mode
 		{
@@ -288,8 +287,10 @@ void Send_data_LR(uint8_t *data,uint8_t Length)
 	// PllLock              Mode Ready
 	SX1276LR.RegDioMapping2 = 0;//RFLR_DIOMAPPING2_DIO4_01 | RFLR_DIOMAPPING2_DIO5_00;
 	SX1276WriteBuffer( REG_LR_DIOMAPPING1, &SX1276LR.RegDioMapping1, 2 );
-
 	
+	/* aby matlab stihal vykreslovat*/
+ 	vTaskDelay(2/portTICK_RATE_MS);
+ 	 
 	SX1276LoRaSetOpMode( RFLR_OPMODE_TRANSMITTER );
 	
 
@@ -431,12 +432,12 @@ void Rf_mode(RF_Queue *Sem_in)
 				
 				#endif
 				
-				Semtech.Stat.Cmd=STAY_IN_STATE;
-				Semtech.Stat.Data_State=RFLR_STATE_TX_RUNNING;
-				if(xQueueSend(Queue_RF_Task,&Semtech,portMAX_DELAY)!=pdPASS)
-				{
-					
-				}
+// 				Semtech.Stat.Cmd=STAY_IN_STATE;
+// 				Semtech.Stat.Data_State=RFLR_STATE_TX_RUNNING;
+// 				if(xQueueSend(Queue_RF_Task,&Semtech,portMAX_DELAY)!=pdPASS)
+// 				{
+// 					
+// 				}
 			
 			}
 			

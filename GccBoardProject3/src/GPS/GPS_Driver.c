@@ -233,7 +233,7 @@ uint8_t Nmea_decode(uint8_t *str1)
 }
 
 /***********************************************/
-int myAtoi(char *str)
+int myAtoi(unsigned char *str)
 {
 	int res = 0; // Initialize result
 	

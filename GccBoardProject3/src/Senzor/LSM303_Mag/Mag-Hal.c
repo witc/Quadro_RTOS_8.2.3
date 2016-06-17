@@ -14,6 +14,7 @@
 
 void Mag_read(unsigned char Adress, unsigned char *Data, unsigned char Length)
 {
+	taskENTER_CRITICAL();
 	twi_package_t packet_read = {
 		.addr         = Adress,      // TWI slave memory address data
 		.addr_length  = sizeof (uint8_t),    // TWI slave memory address data size
@@ -22,7 +23,7 @@ void Mag_read(unsigned char Adress, unsigned char *Data, unsigned char Length)
 		.length       = Length                    // transfer data size (bytes)
 	};
 	
-	taskENTER_CRITICAL();
+	
 	twi_master_read(TWI0, &packet_read);
 	taskEXIT_CRITICAL();
 }
@@ -41,6 +42,8 @@ void Mag_send(unsigned char Adress, unsigned char *Data, unsigned char Length)
 	
 	taskENTER_CRITICAL();
 	twi_master_write(TWI0, &packet_write);
+//	while (twi_master_write(TWI0, &packet_write) != TWI_SUCCESS);
+	
 	taskEXIT_CRITICAL();
 	
 }

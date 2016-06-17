@@ -111,13 +111,13 @@ int main (void)
  	System_Timer=xTimerCreate("Timer_System",(500/portTICK_RATE_MS),pdTRUE,0,System_TimerCallback);
  	if(xTimerStart(System_Timer,0)!=pdPASS){}
 		
-	xTaskCreate(Senzor_Task,(const signed char * const) "Senzor",configMINIMAL_STACK_SIZE+300,NULL, 1,&Senzor_id);
+	xTaskCreate(Senzor_Task,(const signed char * const) "Senzor",configMINIMAL_STACK_SIZE+400,NULL, 1,&Senzor_id);
 	/*Create Semtech Task*/
 	xTaskCreate(RF_Task,(const signed char * const) "Sx1276",configMINIMAL_STACK_SIZE+300,NULL, 1,&Sx1276_id);
 	/* Create Motor task */
-	xTaskCreate(Motor_Task,(const signed char * const) "Motor",configMINIMAL_STACK_SIZE+300,NULL, 1,&Motor_id);
+	xTaskCreate(Motor_Task,(const signed char * const) "Motor",configMINIMAL_STACK_SIZE+350,NULL, 1,&Motor_id);
 	/*Create GPS Task*/
-	xTaskCreate(GPS_Task,"GPS",configMINIMAL_STACK_SIZE+200,NULL, 1,&GPS_id);
+//	xTaskCreate(GPS_Task,"GPS",configMINIMAL_STACK_SIZE+200,NULL, 1,&GPS_id);
 	/*Create Optial Flow Task*/
 //	xTaskCreate(O_Flow_Task,"O_Flow",configMINIMAL_STACK_SIZE+200,NULL, 1,&O_FLOW_id); 
 	

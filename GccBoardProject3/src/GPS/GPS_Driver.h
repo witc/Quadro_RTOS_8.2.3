@@ -15,7 +15,7 @@
 
 uint8_t Nmea_decode(uint8_t *str1);
 uint8_t Calculate_CRC(uint8_t *crc, uint8_t length);
-int myAtoi(char *str);
+int myAtoi(unsigned char *str);
 uint8_t str_compare(uint8_t s1[], uint8_t s2[]);
 
 void Gps_init(void);

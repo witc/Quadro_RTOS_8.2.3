@@ -8,7 +8,7 @@
 
 #ifndef MPU_9150_H_
 #define MPU_9150_H_
-
+#include "Senzor_Task.h"
 
 //MPU6050 I2C library for ARM STM32F103xx Microcontrollers - Main header file 
 //Has bit, byte and buffer I2C R/W functions
@@ -444,6 +444,25 @@ extern "C" {
 #define BIT_STBY_XYZA       (BIT_STBY_XA | BIT_STBY_YA | BIT_STBY_ZA)
 #define BIT_STBY_XYZG       (BIT_STBY_XG | BIT_STBY_YG | BIT_STBY_ZG)
 
+/* MAGNETOMETR*/
+
+#define AK8963_REG_WIA		0x00
+#define AK8963_REG_INFO		0x01
+#define AK8963_REG_ST1		0x02
+#define AK8963_REG_HXL		0x03
+#define AK8963_REG_HXH		0x04
+#define AK8963_REG_HYL		0x05
+#define AK8963_REG_HYH		0x06
+#define AK8963_REG_HZL		0x07
+#define AK8963_REG_HZH		0x08
+#define AK8963_REG_ST2		0x09
+#define AK8963_REG_CNTL1	0x0A
+#define AK8963_REG_CNTL2	0x0B
+#define AK8963_REG_ASTC		0x0C
+#define AK8963_REG_TS1		0x0D
+#define AK8963_REG_TS2		0x0E
+#define AK8963_REG_I2CDIS	0x0F
+
 void MPU6050_Initialize(void);
 bool MPU6050_TestConnection(void);
 
@@ -479,6 +498,7 @@ void MPU9150_getMotion3(uint8_t *buffer);
 
 void MPU9150_Gyro_Tempr_Bias(short *offset);
 uint8_t MPU9150_Gyro_Tempr_Bias_no_fifo(short *offset);
+void Calibrate_accel(KAL_ACC_XYZ * COMPAS);
 
 
 #ifdef __cplusplus

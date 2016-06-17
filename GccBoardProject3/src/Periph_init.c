@@ -48,18 +48,18 @@ void bus_init(void)
 	/* TWI init - MPU*/
 	twi_master_options_t opt = {
 		.speed = TWI_SPEED,
-		.chip  = 0x19,
+		.chip  = 0x1E,
 	};
 	
 	twi_master_setup(TWI0, &opt);
-	twi_master_init(TWI0, &opt);
-	twi_master_enable(TWI0);
+// 	twi_master_init(TWI0, &opt);
+// 	twi_master_enable(TWI0);
 	
 	/* SPI - Semtech & MPU9250 */
 	spi_flags_t spi_flags = SPI_MODE_0;
 	spi_master_init(SPI);
 	//	spi_set_master_mode(CONF_ILI9341_SPI);
-	spi_master_setup_device(SPI, &device_rf, spi_flags,	CONF_ILI9341_CLOCK_SPEED*10, 0);
+	spi_master_setup_device(SPI, &device_rf, spi_flags,	CONF_ILI9341_CLOCK_SPEED*5, 0);
 	spi_master_setup_device(SPI, &device_mpu, spi_flags,	CONF_ILI9341_CLOCK_SPEED, 1);	//mpu spi
 	spi_master_setup_device(SPI, &adns_3080, spi_flags,	CONF_ILI9341_CLOCK_SPEED/2, 2);	//mpu spi
 	//spi_set_peripheral_chip_select_value(CONF_ILI9341_SPI, 1);

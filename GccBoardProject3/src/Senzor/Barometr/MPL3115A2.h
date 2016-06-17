@@ -8,6 +8,8 @@
 
 #ifndef MPL3115A2_H_
 #define MPL3115A2_H_
+float quickMedianFilter3(float * v);
+float applyBarometerMedianFilter(float newPressureReading);
 
 uint8_t Baro_send(unsigned char Adress, unsigned char *Data, unsigned char Length);
 uint8_t Baro_read(unsigned char Adress, unsigned char *Data, unsigned char Length);
@@ -15,6 +17,19 @@ uint8_t Baro_get_preasure(uint8_t* data);
 void Baro_init(void);
 void toggleOneShot(void);
 void Baro_Calibrate( float *init_altitude );
+void MPL3115A2_clearRegisterBit(unsigned char regAddr, unsigned char bitMask);
+void MPL3115A2_enableEventFlags();
+void MPL3115A2_setRegisterBit(unsigned char regAddr, unsigned char bitMask);
+void MPL3115A2_setModeActive();
+void MPL3115A2_setModeStandby();
+void MPL3115A2_setModeAltimeter();
+void MPL3115A2_setModeBarometer();
+void setOversampleRate(uint8_t sampleRate);
+
+
+
+
+
 
 
  #define MPL3115A2_ADDRESS                       (0x60)    // 1100000

@@ -64,9 +64,10 @@ typedef struct{
 uint8_t Mag_get_b(uint8_t * XYZ);
 void Calibrate_Comp(MAG_XYZ * COMP);
  void Get_Filtered_Heading(float Pitch, float Roll,MAG_XYZ *COMPAS,float *fHeading);
+void Mag_init(void);
 
 
-#define PI					3.14159265359
+/*#define PI					3.14159265359*/
 
 
 #endif /* COMP_H_ */

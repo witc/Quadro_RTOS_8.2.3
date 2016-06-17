@@ -10,11 +10,11 @@
 #define SENZOR_TASK_H_
 
 void Senzor_Task(void *pvParameters);
-void Mag_init(void);
+
 //void MPU_TimerCallback(xTimerHandle pxTimer);
 void MPU9150_INT(void);
 
-#define TWI_SPEED				400000//400 khz max
+#define TWI_SPEED				100000//400 khz max
 
 
 #define ROLL     0
@@ -36,6 +36,15 @@ typedef  struct {
 	float yaw;
 } EulerAngles;
 
+typedef  struct {
+	short X_Offset;
+	short Y_Offset;
+	short Z_Offset;
+	
+	double Nasobek1;
+	double Nasobek2;
+	
+}KAL_ACC_XYZ;
 //extern sensors_t sensors;
 
 #endif /* COMPASS_TASK_H_ */

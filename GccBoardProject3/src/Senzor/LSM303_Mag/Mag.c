@@ -7,6 +7,7 @@
 
 #include <asf.h>
 #include <math.h>
+#include <arm_math.h>
 #include "Mag.h"
 #include "Mag-Hal.h"
 #include "Main.h"
@@ -19,13 +20,13 @@ void Mag_init(void)
 	MY_MAG_CONF_STRUCT Mag_set;
 	
 	Mag_set.bCRA_REG=(7<<CRA_REG_M_OFFSET);	//frekvence - 220hz
-	Mag_set.bCRB_REG=(5<<CRB_REG_M_OFFSET);	//citlivost +-4,7 gaus
+	Mag_set.bCRB_REG=(1<<CRB_REG_M_OFFSET);	//citlivost +-4,7 gaus
 	Mag_set.bMR_REG	=0;	//continous conversion
 	
-	vTaskDelay(10/portTICK_RATE_MS);
 	Mag_send(ADRS_CRA_REG_M,&Mag_set.bCRA_REG,1);
 	Mag_send(ADRS_CRB_REG_M,&Mag_set.bCRB_REG,1);
 	Mag_send(ADRS_MR_REG_M,&Mag_set.bMR_REG,1);
+	vTaskDelay(10/portTICK_RATE_MS);
 	
 
 }
@@ -38,27 +39,31 @@ uint8_t Mag_get_b(uint8_t *XYZ)
 	
 	uint8_t temp=0;
 	
-	Mag_read(SR_REG_M,&temp,1);
-		
-	if ((temp&0b1)!=0b1) 
-	{	
-		return 1;
-	}
-	else
-	{	
-		Mag_read(OUT_XLM,&XYZ[0],6);
-		return 0;
-	}
-	
-	
-// 	Mag_read(OUT_XLM,&XYZ->X_L,1);
-// 	
-// 	Mag_read(OUT_YHM,&XYZ->Y_H,1);
-// 	Mag_read(OUT_YLM,&XYZ->Y_L,1);
-// 	
-// 	Mag_read(OUT_ZHM,&XYZ->Z_H,1);
-// 	Mag_read(OUT_ZLM,&XYZ->Z_L,1);
+ 	Mag_read(SR_REG_M,&temp,1);
+ 		
+ 	if ((temp&0b1)!=0b1) 
+ 	{	
+ 		return 1;
+ 	}
+ 	else
+ 	{	
+ 		//Mag_read(OUT_XLM,&XYZ[0],6);
+		 
+		 Mag_read(OUT_XHM,&XYZ[1],1);
+		 Mag_read(OUT_XLM,&XYZ[0],1);
+		 
+		 
+		 
+		 Mag_read(OUT_YHM,&XYZ[3],1);
+		 Mag_read(OUT_YLM,&XYZ[2],1);
+		 
+		 Mag_read(OUT_ZHM,&XYZ[5],1);
+		 Mag_read(OUT_ZLM,&XYZ[4],1);
 
+ 		return 0;
+ 	}
+	
+	
 	
 }
 
@@ -79,7 +84,7 @@ void Calibrate_Comp(MAG_XYZ * COMPAS)
 			 
 	do 
 	{
-		while( Mag_get_b(COMPAS)!=0);
+		while( Mag_get_b((uint8_t)COMPAS)!=0);
 	 
 		COMPAS->X=(short)((COMPAS->X_H<<8) | COMPAS->X_L);
 		COMPAS->Y=(short)((COMPAS->Y_H<<8) | COMPAS->Y_L);

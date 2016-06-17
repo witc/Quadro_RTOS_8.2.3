@@ -19,8 +19,8 @@
 #define RAW_INT_MPU9150		1
 
 /* define TX or RX */
-#define	TX_TO_MATLAB		0
-#define	RX_NEW_CMD			1
+#define	TX_TO_MATLAB		1
+#define	RX_NEW_CMD			0
 
 //LoRa
 typedef enum
@@ -156,8 +156,10 @@ typedef struct{
 # error "Please specify Way to get a datta from MPU9150"
 #endif	
 	
-	uint8_t baro[5];
+	uint32_t baro_uT;
+	uint32_t baro_uP;
 	uint8_t mag[6];
+	float gps_alt;
 	short temp;
 	
 

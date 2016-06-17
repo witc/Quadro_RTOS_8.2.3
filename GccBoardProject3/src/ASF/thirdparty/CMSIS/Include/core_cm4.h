@@ -287,7 +287,7 @@ typedef union
     uint32_t _reserved1:7;               /*!< bit: 20..26  Reserved                           */
 #endif
     uint32_t Q:1;                        /*!< bit:     27  Saturation condition flag          */
-    uint32_t V:1;                        /*!< bit:     28  Overflow condition code flag       */
+    uint32_t Vect:1;                        /*!< bit:     28  Overflow condition code flag       */
     uint32_t C:1;                        /*!< bit:     29  Carry condition code flag          */
     uint32_t Z:1;                        /*!< bit:     30  Zero condition code flag           */
     uint32_t N:1;                        /*!< bit:     31  Negative condition code flag       */
@@ -326,7 +326,7 @@ typedef union
     uint32_t T:1;                        /*!< bit:     24  Thumb bit        (read 0)          */
     uint32_t IT:2;                       /*!< bit: 25..26  saved IT state   (read 0)          */
     uint32_t Q:1;                        /*!< bit:     27  Saturation condition flag          */
-    uint32_t V:1;                        /*!< bit:     28  Overflow condition code flag       */
+    uint32_t Vect:1;                        /*!< bit:     28  Overflow condition code flag       */
     uint32_t C:1;                        /*!< bit:     29  Carry condition code flag          */
     uint32_t Z:1;                        /*!< bit:     30  Zero condition code flag           */
     uint32_t N:1;                        /*!< bit:     31  Negative condition code flag       */

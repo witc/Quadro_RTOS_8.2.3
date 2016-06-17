@@ -7,8 +7,10 @@
 
 #include <asf.h>
 #include "main.h"
+#include "Motor.h"
 #include "MPU_9150.h"
 #include "MPU_9150_HAL.h"
+#include "Senzor_Task.h"
 #include "FreeRTOS_V_8_Header.h"
 
 Pdc *twi_dma_inst;
@@ -199,6 +201,24 @@ void MPU6050_Initialize(void)
 		
 	}
 
+	
+	/* MAgnetometer init*/
+	
+	// RESET
+// 	data[0]=0x1;
+// 	MPU_9150_send_mag(AK8963_REG_CNTL2,1,data);
+// 	
+// 	// who I am
+// 	MPU_9150_read_mag(AK8963_REG_WIA,1,&data[0]);
+// 	if (data[0]!=0x48)
+// 	{
+// 		NVIC_SystemReset();
+// 		
+// 	}
+// 	
+// 	// continous mode + 16 bit ooutput data
+// 	data[0]=0x12;
+// 	MPU_9150_send_mag(AK8963_REG_CNTL1,1,data);
 	
 	
 
@@ -472,7 +492,7 @@ uint32_t MPU6050_I2C_ByteWrite(uint8_t slaveAddr, uint8_t* pBuffer, uint8_t writ
 {
     // ENTR_CRT_SECTION();
 	
-	return MPU_9150_send(writeAddr,pBuffer,1);
+	return MPU_9150_send(writeAddr,1,pBuffer);
 
 }
 
@@ -489,7 +509,7 @@ uint32_t MPU9250_BufferRead(uint8_t slaveAddr, uint8_t* pBuffer, uint8_t readAdd
     // ENTR_CRT_SECTION();
  //	for (short i=0;i<NumByteToRead;i++)
  //	{
-		return MPU_9150_read(readAddr,&pBuffer[0],NumByteToRead);	
+		return MPU_9150_read(readAddr,NumByteToRead,&pBuffer[0]);	
 		    
 }
 /**
@@ -702,6 +722,59 @@ uint8_t MPU9150_Gyro_Tempr_Bias_no_fifo(short *offset)
 	 return 0;
 }
 
+void Calibrate_accel(KAL_ACC_XYZ * COMPAS)
+ {		
+	
+	short MAX_X=-20000;
+	short MAX_Y=-20000;
+	short MAX_Z=-20000;
+	
+	short MIN_X=20000;
+	short MIN_Y=20000;
+	short MIN_Z=20000;
+	 
+	uint8_t buffer[14];
+	short AC[3];
+	
+	for (short kal=0;kal<1500;kal++)
+	{	
+		vTaskDelay(10/portTICK_RATE_MS);
+		MPU9250_BufferRead(MPU6050_DEFAULT_ADDRESS,buffer,MPU6050_RA_ACCEL_XOUT_H, 14);
+
+		AC[0]=(((short)(buffer[0]) << 8 ) | buffer[1]);
+		AC[1]=(((short)(buffer[2]) << 8 ) | buffer[3]);
+		AC[2]=(((short)(buffer[4]) << 8 ) | buffer[5]);
+		
+		AC[0] = filterApplyPt1(AC[0], &Filters[ACC_X], 5, 0.01f);	//(default 17Hz
+		AC[1] = filterApplyPt1(AC[1], &Filters[ACC_Y], 5, 0.01f);	//(default 17Hz
+		AC[2] = filterApplyPt1(AC[2], &Filters[ACC_Z], 5, 0.01f);	//(default 17Hz
+					
+						 
+		if (MAX_Y<AC[1])MAX_Y=AC[1];						//MIN_X=-146
+		if (MAX_X<AC[0])MAX_X=AC[0];
+		if (MAX_Z<AC[2])MAX_Z=AC[2];
+	  
+		if (MIN_X>AC[0])MIN_X=AC[0];
+		if (MIN_Y>AC[1])MIN_Y=AC[1];
+		if (MIN_Z>AC[2])MIN_Z=AC[2];
+	  
+		 	 		 
+		
+		  
+	} 
+	 
+	COMPAS->Nasobek1=(double)(abs(MAX_X)+abs(MIN_X))/(abs(MAX_Y)+abs(MIN_Y));
+	COMPAS->Nasobek2=(double)(abs(MAX_X)+abs(MIN_X))/(abs(MAX_Z)+abs(MIN_Z));
+	
+	 COMPAS->X_Offset=MIN_X+MAX_X;	//posunuti
+	 COMPAS->Y_Offset=MIN_Y+MAX_Y;
+	 COMPAS->Z_Offset=MIN_Z+MAX_Z;
+	 
+	 COMPAS->X_Offset-=(COMPAS->X_Offset)/2;
+	 COMPAS->Y_Offset-=(COMPAS->Y_Offset)/2;
+	 COMPAS->Z_Offset-=(COMPAS->Z_Offset)/2;
+		
+ }
 // 	for (short i=0;i<NO_OF_SAMPLES;i++)
 // 	{
 // 		MPU6050_I2C_BufferRead(MPU6050_DEFAULT_ADDRESS,buffer, MPU6050_RA_GYRO_XOUT_H  , 6);  

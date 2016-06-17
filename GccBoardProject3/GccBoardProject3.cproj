@@ -279,12 +279,12 @@
     </com_atmel_avrdbg_tool_edbg>
     <avrtoolinterfaceclock>2000000</avrtoolinterfaceclock>
     <PercepioTrace>
-      <TargetOS>FreeRTOSv8</TargetOS>
+      <TargetOS />
       <Frequency>12000000</Frequency>
       <EnableTraceInterrupts>False</EnableTraceInterrupts>
       <EnableNonintrusive>True</EnableNonintrusive>
-      <EnableTargetOS>True</EnableTargetOS>
-      <EnableApplicationOutput>True</EnableApplicationOutput>
+      <EnableTargetOS>False</EnableTargetOS>
+      <EnableApplicationOutput>False</EnableApplicationOutput>
       <EnableDataWatchPoints>True</EnableDataWatchPoints>
       <EnablePC>False</EnablePC>
       <EnablePCPolled>False</EnablePCPolled>
@@ -565,6 +565,8 @@
       <Value>../src/Optical_Flow</Value>
       <Value>../src/Senzor/Barometr</Value>
       <Value>../src/Senzor/LSM303_Mag</Value>
+      <Value>../src/Senzor/MPU/DMP</Value>
+      <Value>../src/Senzor/MAhony_Madgwick</Value>
     </ListValues>
   </armgcc.compiler.directories.IncludePaths>
   <armgcc.compiler.optimization.level>Optimize (-O1)</armgcc.compiler.optimization.level>
@@ -759,6 +761,8 @@
     <Folder Include="src\Senzor\MPU" />
     <Folder Include="src\Senzor\Barometr" />
     <Folder Include="src\Senzor\LSM303_Mag" />
+    <Folder Include="src\Senzor\MPU\DMP" />
+    <Folder Include="src\Senzor\MAhony_Madgwick" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\ASF\common\services\serial\sam_uart\uart_serial.h">
@@ -1013,6 +1017,18 @@
     <Compile Include="src\Senzor\Barometr\MPL3115A2.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\Senzor\Barometr\MS5611.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\Barometr\MS5611.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\Imu.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\Imu.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\Senzor\LSM303_Mag\Mag-Hal.c">
       <SubType>compile</SubType>
     </Compile>
@@ -1023,6 +1039,30 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\Senzor\LSM303_Mag\Mag.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MAhony_Madgwick\MadgwickAHRS.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MAhony_Madgwick\MadgwickAHRS.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MPU\DMP\dmpKey.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MPU\DMP\dmpmap.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MPU\DMP\inv_mpu.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MPU\DMP\inv_mpu.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MPU\DMP\inv_mpu_dmp_motion_driver.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MPU\DMP\inv_mpu_dmp_motion_driver.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\Senzor\MPU\MPU_9150.c">

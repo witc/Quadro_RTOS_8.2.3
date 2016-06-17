@@ -8,8 +8,8 @@
  */ 
 
 
-#ifndef COMP-HAL_H_
-#define COMP-HAL_H_
+#ifndef COMP_HAL_H_
+#define COMP_HAL_H_
 
 void Mag_read(unsigned char Adress, unsigned char *Data, unsigned char Length);
 void Mag_send(unsigned char Adress, unsigned char *Data, unsigned char Length);
@@ -22,7 +22,7 @@ typedef struct{
 	
 } MY_MAG_CONF_STRUCT;
 
-#define TWI_SPEED				100000
+
 #define LIS_ADRESS				0x1E
 
 #define CRA_REG_M_OFFSET		2

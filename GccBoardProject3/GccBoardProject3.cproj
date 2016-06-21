@@ -1065,6 +1065,12 @@
     <Compile Include="src\Senzor\MPU\DMP\inv_mpu_dmp_motion_driver.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\Senzor\MPU\Magdwick.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Senzor\MPU\Magdwick.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\Senzor\MPU\MPU_9150.c">
       <SubType>compile</SubType>
     </Compile>

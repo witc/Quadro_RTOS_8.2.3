@@ -53,6 +53,9 @@ volatile short offset[3]={0,0,0};
 extern int32_t accSum[3];
 extern	int16_t accSmooth[3];
 extern float accAlt, vel;
+extern fp_vect EstiGravity;
+extern fp_vect EstiMagnet;
+extern short acc_1G;
 	//volatile	MPU9150_Buffer XYZ;
 	
 void Gyro_Angle(short g_x,short g_y,short g_z,EulerAngles *uhly,float dt);
@@ -373,6 +376,7 @@ void Senzor_Task(void *pvParameters)
 	uint16_t packet_count=0;
 	
 	float baro_meas=0,last_baro_meas=0,temp_gps_alt;
+	float temp_distance,temp_bearing;
 	int32_t tlak,teplota;
 	float baro_vel=0;
 	uint32_t preasure=0;
@@ -416,7 +420,7 @@ void Senzor_Task(void *pvParameters)
 // 	};
 // 	
 // 	twi_master_setup(TWI0, &opt);
-	Mag_init();
+//	Mag_init();
 	
  	Mag_Timer=xTimerCreate("Mag_Timer",(50/portTICK_RATE_MS),pdTRUE,0,Mag_TimerCallback);
  	if(xTimerStart(Mag_Timer,0)!=pdPASS){}
@@ -462,18 +466,20 @@ void Senzor_Task(void *pvParameters)
 // 	}		
 // 	else
 // 	{
-// 		MAG.Nasobek1=0.989999999;
-// 		MAG.Nasobek2=1.0673854;
-// 		MAG.X_Offset=-29;
-// 		MAG.Y_Offset=-50;
-// 		MAG.Z_Offset=51;
+ 		MAG.Nasobek1=0.9628f;
+ 		MAG.Nasobek2=0.9333f;
+ 		MAG.X_Offset=51;
+ 		MAG.Y_Offset=-93;
+ 		MAG.Z_Offset=102;
 // 		
 // 	}	
 	
 
 		
 		//init Z 1G
-		//EstiGravity.A[2]=acc_1G;
+	EstiGravity.XYZ[2]=acc_1G;
+	EstiMagnet.XYZ[2]=310;
+	
 for (;;)
 {	
 	
@@ -481,16 +487,17 @@ for (;;)
 		{	
 			
 			if(Senzor.senzor_type==MAG_TYPE)
-			{	
-			 	if(Mag_get_b(buffer_mag)==0)
-				{
-					MAG.X=((short)((buffer_mag[1]<<8) | buffer_mag[0]));//-MAG.X_Offset);//);//+X_Offset;-30
-					MAG.Y=((short)((buffer_mag[3]<<8) | buffer_mag[2]));//-MAG.Y_Offset);//);//+Y_Offset;-49
-					MAG.Z=((short)((buffer_mag[5]<<8) | buffer_mag[4]));//-MAG.Z_Offset);//);-49
-// 					MAG.Y*=( MAG.Nasobek1);//0.997536;
-// 					MAG.Z*=( MAG.Nasobek2);//1.074;
+			{		
+				
+ 			 	if(Mag_read_mpu(buffer_mag)==1)
+ 				{
+					MagXYZ[1]=((short)((buffer_mag[1]<<8) | buffer_mag[0]))-MAG.X_Offset;//);//+X_Offset;-30
+					MagXYZ[0]=((short)((buffer_mag[3]<<8) | buffer_mag[2]))-MAG.Y_Offset;//);//+Y_Offset;-49
+					MagXYZ[2]=((short)((buffer_mag[5]<<8) | buffer_mag[4]))-MAG.Z_Offset;//);-49
+					MagXYZ[2]*=-1;
+ 					MagXYZ[1]*=( MAG.Nasobek1);//0.997536;
+ 					MagXYZ[2]*=( MAG.Nasobek2);//1.074;
 				}
-
 				
 				 
 				//Get_Filtered_Heading(uhel[0],uhel[1],&MAG,&buffer);
@@ -557,7 +564,7 @@ for (;;)
 				
 				
 				/* Calculate .....*/
-				IMU_Compute(GyroXYZ, AccXYZ,uhel,dt);
+				IMU_Compute(GyroXYZ, AccXYZ,MagXYZ,uhel,dt);
 								                                                                // integrate velocity to get distance (x= a/2 * t^2)
  				accAlt = (accAlt * 0.9992 + (float)(baro_meas/10) * (1.0f - 0.9992));    // complementary filter for altitude estimation (baro & acc)
 				//accAlt=filterApplyPt1((accAlt ),&Filters[FINAL_ALT],15,dt);
@@ -573,23 +580,28 @@ for (;;)
  			{
 	 			//temp_gps_alt= (float) ((short) ((Senzor.gps_alt[0] << 16) | Senzor.gps_alt[1]<< 8 | Senzor.gps_alt[0]));
 				//temp_gps_alt/=5.1f;
-				temp_gps_alt=Senzor.gps_alt;
+				//temp_gps_alt=Senzor.gps_alt;
+				temp_distance=Senzor.gps_distance;
+				temp_bearing=Senzor.gps_bear-uhel[2];
+				
+				
+				Position.pitch=(float)temp_distance;//M_PI*uhel[0]+2.7;//vel;//sqrtf(AccXYZ[0] * AccXYZ[0]+ AccXYZ[1]* AccXYZ[1]+ AccXYZ[2]* AccXYZ[2]);//AccXYZ[2] ;//accAlt;//(uhel[0]*180/M_PI);	//+1 je korekce køivì nalepeného mpu+1.7
+				Position.roll=(float)temp_bearing;//180/M_PI*uhel[1]+1.7;//1000*accAlt;//accAlt;//baro_vel;//accSum[2];//100*baro_meas;//vel;//((uhel[2]));	////+1 je korekce køivì nalepeného mpu+1.6
+				Position.yaw=(float)0;//0;//-GyroXYZ[2];//baro_meas;//baro_meas;//vel;//accSum[2];//-GyroXYZ[2];
+				Position.Gyro_d[0]=GyroXYZ[0];
+				Position.Gyro_d[1]=GyroXYZ[1];//AccXYZ[2];
+				Position.Gyro_d[2]=0;//GyroXYZ[2];
+				Position.Baro=0;//accAlt;//pos_z; // vyska je v metrech
+				
+				Position.type_of_data=FROM_SENZOR;
+				if(xQueueSend(Queue_Motor_Task,&Position,1))	//pdPASS=1-
+				{
+					
+				}
 	    	}
 
 			/* Send new position to motor task */
-			Position.pitch=(float)MAG.X;//M_PI*uhel[0]+2.7;//vel;//sqrtf(AccXYZ[0] * AccXYZ[0]+ AccXYZ[1]* AccXYZ[1]+ AccXYZ[2]* AccXYZ[2]);//AccXYZ[2] ;//accAlt;//(uhel[0]*180/M_PI);	//+1 je korekce køivì nalepeného mpu+1.7
-			Position.roll=(float)MAG.Y;//180/M_PI*uhel[1]+1.7;//1000*accAlt;//accAlt;//baro_vel;//accSum[2];//100*baro_meas;//vel;//((uhel[2]));	////+1 je korekce køivì nalepeného mpu+1.6
-			Position.yaw=(float)MAG.Z;//0;//-GyroXYZ[2];//baro_meas;//baro_meas;//vel;//accSum[2];//-GyroXYZ[2];
-			Position.Gyro_d[0]=GyroXYZ[0];
-			Position.Gyro_d[1]=GyroXYZ[1];//AccXYZ[2];
-			Position.Gyro_d[2]=0;//GyroXYZ[2];
-			Position.Baro=0;//accAlt;//pos_z; // vyska je v metrech
-	
-			Position.type_of_data=FROM_SENZOR;
-			if(xQueueSend(Queue_Motor_Task,&Position,1))	//pdPASS=1-
-			{
-		
-			}
+			
 	
  		}
 				

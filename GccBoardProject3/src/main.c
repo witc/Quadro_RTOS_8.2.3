@@ -117,7 +117,7 @@ int main (void)
 	/* Create Motor task */
 	xTaskCreate(Motor_Task,(const signed char * const) "Motor",configMINIMAL_STACK_SIZE+350,NULL, 1,&Motor_id);
 	/*Create GPS Task*/
-//	xTaskCreate(GPS_Task,"GPS",configMINIMAL_STACK_SIZE+200,NULL, 1,&GPS_id);
+	xTaskCreate(GPS_Task,"GPS",configMINIMAL_STACK_SIZE+200,NULL, 1,&GPS_id);
 	/*Create Optial Flow Task*/
 //	xTaskCreate(O_Flow_Task,"O_Flow",configMINIMAL_STACK_SIZE+200,NULL, 1,&O_FLOW_id); 
 	

@@ -17,4 +17,5 @@ uint32_t MPU_9150_read_mag(unsigned char Adress, unsigned char Length, unsigned 
 
 
 
+
 #endif /* MPU_9150_HAL_H_ */

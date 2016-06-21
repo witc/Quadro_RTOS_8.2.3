@@ -18,9 +18,10 @@ typedef struct fp_vector {
 // 	float A[3];
 // 	t_fp_vector_xyz Vect;
 // } fp_est_vector;
-void IMU_Compute(short *GyroAngle, short *Accel,float *uhel, float dt);
+void IMU_Compute(short *GyroAngle, short *Accel, short *Mag,float *uhel, float dt);
 void rotate_DCM( fp_vect *v, float *delta);
 void acc_calc(short *AccXYZ,float *angle_radian, float dt);
+float calculateHeading(fp_vect *vec,float *angle_radian);
 float applyDeadband(float value, float deadband);
 void normalizeV(struct fp_vector *src, struct fp_vector *dest);
 void HP_Fir(float *data,short id);

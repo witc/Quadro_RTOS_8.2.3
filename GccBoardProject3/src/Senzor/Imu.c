@@ -5,7 +5,7 @@
  //*  Author: J
  //*/ 
 //
-#include <math.h>
+#include <arm_math.h>
 #include <asf.h>
 #include "stdlib.h"
 #include "Imu.h"
@@ -22,6 +22,8 @@ int32_t accSum[3];
 
 /*Gravity vector*/
 fp_vect EstiGravity;
+fp_vect EstiGravity_Normalize;
+fp_vect EstiMagnet;
 
 float  accAlt=0,vel=0;
 
@@ -36,7 +38,7 @@ const float FIR_HPass[22]=  {
 };
 
 
-void IMU_Compute(short *GyroAngle, short *Accel,float *uhel, float dt)
+void IMU_Compute(short *GyroAngle, short *Accel, short *Mag,float *uhel, float dt)
 {	
 	float accZ_tmp,vel_acc;
 	
@@ -53,7 +55,7 @@ void IMU_Compute(short *GyroAngle, short *Accel,float *uhel, float dt)
 	
 	/* complementar filter  - compensate gyro drift*/
 	/*if whole acceleration is useful - repair the mistake of computed  gravity*/
-	if ((AccMagnitude>0.7)&&(AccMagnitude<1.33))
+	if ((AccMagnitude>0.65)&&(AccMagnitude<1.35))
  	{
 		for (uint8_t axis = 0; axis < 3; axis++)
 		{
@@ -66,16 +68,27 @@ void IMU_Compute(short *GyroAngle, short *Accel,float *uhel, float dt)
 	uhel[0] = atan2f(EstiGravity.XYZ[1], EstiGravity.XYZ[2]);
 	uhel[1]= atan2f(-EstiGravity.XYZ[0], sqrtf(EstiGravity.XYZ[1] * EstiGravity.XYZ[1] + EstiGravity.XYZ[2] * EstiGravity.XYZ[2]));
 
-	// 				 if (sensors(SENSOR_MAG)) {
-	// 					 rotateV(&EstM.V, deltaGyroAngle);
-	// 					 for (axis = 0; axis < 3; axis++)
-	// 					 EstM.A[axis] = (EstM.A[axis] * (float)mcfg.gyro_cmpfm_factor + magADC[axis]) * INV_GYR_CMPFM_FACTOR;
-	// 					 heading = calculateHeading(&EstM);
-	// 					 } else {
-  //	rotate_DCM(&EstiGravity, deltaGyroAngle);
-	  	//normalizeV(&EstiGravity, &EstiGravity);
+	if ((Mag[0]==0)&&(Mag[1]==0)&&(Mag[2]==0))
+	{	
+// 		rotate_DCM(&EstiGravity_Normalize, deltaGyroAngle);
+// 		normalizeV(&EstiGravity_Normalize, &EstiGravity_Normalize);
+			
+ 	 } else
+ 	 {
+ 		 rotate_DCM(&EstiMagnet, deltaGyroAngle);
+  		 for (uint8_t axis = 0; axis < 3; axis++)
+  		 {
+  			  EstiMagnet.XYZ[axis] = (float)(EstiMagnet.XYZ[axis] * 0.987f )+ (Mag[axis] *(float)(1- 0.987f));
+  		 }
+
+ 	 }
+	 
+	 //uhel[2]=EstiGravity_Normalize.XYZ[2]; 
+	 uhel[2]=calculateHeading(&EstiMagnet,uhel);
 //  	uhel[2] = calculateHeading(&EstiN,uhel[0],uhel[1]);
 	// //
+	
+	//uhel[2]=atan2f();
 	acc_calc(Accel,uhel,dt); // rotate acc vector into earth frame
 		
 	vel_acc = accSum[2] *dt*0.0001220703f; // in m
@@ -133,6 +146,46 @@ void acc_calc(short *AccXYZ,float *angle_radian, float dt)
 	// 	accSumCount++;
 	
 } 
+
+// baseflight calculation by Luggi09 originates from arducopter
+float calculateHeading(fp_vect *vec,float *angle_radian)
+{
+	float head,headX,headY;
+	
+	float cos_roll,cos_pitch,sin_pitch,sin_roll;//
+	
+	cos_roll=cosf(angle_radian[0]);
+	sin_roll=sinf(angle_radian[0]);
+	
+	cos_pitch=cosf(angle_radian[1]);
+	sin_pitch=sinf(angle_radian[1]);
+	
+	// =atan((double)ACC_MAG.Acc_Y/(double)ACC_MAG.Acc_Z);
+	//float Pitch=atan((double)ACC_MAG.Acc_X/(double)ACC_MAG.Acc_Z);
+	
+	headX=(float)vec->XYZ[0]*cos_pitch+(float)(vec->XYZ[2])*sin_pitch;
+	headY=((float)vec->XYZ[0] *sin_roll*sin_pitch)+((float)vec->XYZ[1]*cos_roll)-((float)vec->XYZ[2]* sin_roll*cos_pitch);
+	
+	head=atan2(headY,headX);
+	head=head*57.3f;
+	
+	if(head<0) head+=360;
+	
+// 	float cosineRoll = cosf(angle_radian[0]);
+// 	float sineRoll = sinf(angle_radian[0]);
+// 	float cosinePitch = cosf(angle_radian[1]);
+// 	float sinePitch = sinf(angle_radian[1]);
+// 	float Xh = vec->XYZ[0] * cosinePitch + vec->XYZ[1] * sineRoll * sinePitch + vec->XYZ[2] * sinePitch * cosineRoll;
+// 	float Yh = vec->XYZ[1] * cosineRoll - vec->XYZ[2] * sineRoll;
+// 	float hd = atan2(Yh, Xh) ;	
+// 	hd*=180/M_PI;//4 mag incilination
+// 	//head = lrintf(hd);
+// 	if (head < 0)
+// 	head += 360;
+
+	return head;
+}
+
 
 /* Rotation matrix DCM - compute actual rotation */
 void rotate_DCM( fp_vect *vect, float *delta)
@@ -209,6 +262,8 @@ void normalizeV(struct fp_vector *src, struct fp_vector *dest)
 		dest->XYZ[2] = src->XYZ[2] / length;
 	}
 }
+
+
 
 
 void HP_Fir(float *data,short id)

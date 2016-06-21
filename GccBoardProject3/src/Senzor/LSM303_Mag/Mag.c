@@ -51,9 +51,7 @@ uint8_t Mag_get_b(uint8_t *XYZ)
 		 
 		 Mag_read(OUT_XHM,&XYZ[1],1);
 		 Mag_read(OUT_XLM,&XYZ[0],1);
-		 
-		 
-		 
+		 		 
 		 Mag_read(OUT_YHM,&XYZ[3],1);
 		 Mag_read(OUT_YLM,&XYZ[2],1);
 		 

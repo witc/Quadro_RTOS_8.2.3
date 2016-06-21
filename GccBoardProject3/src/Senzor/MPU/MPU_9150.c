@@ -205,20 +205,20 @@ void MPU6050_Initialize(void)
 	/* MAgnetometer init*/
 	
 	// RESET
-// 	data[0]=0x1;
-// 	MPU_9150_send_mag(AK8963_REG_CNTL2,1,data);
+ 	data[0]=0x1;
+ 	MPU_9150_send_mag(AK8963_REG_CNTL2,1,data);
+ 	
+ 	// who I am
+ 	MPU_9150_read_mag(AK8963_REG_WIA,1,&data[0]);
+ 	if (data[0]!=0x48)
+ 	{
+ 		NVIC_SystemReset();
+ 		
+ 	}
 // 	
-// 	// who I am
-// 	MPU_9150_read_mag(AK8963_REG_WIA,1,&data[0]);
-// 	if (data[0]!=0x48)
-// 	{
-// 		NVIC_SystemReset();
-// 		
-// 	}
-// 	
-// 	// continous mode + 16 bit ooutput data
-// 	data[0]=0x12;
-// 	MPU_9150_send_mag(AK8963_REG_CNTL1,1,data);
+ 	// continous mode + 16 bit ooutput data
+ 	data[0]=0x11;
+ 	MPU_9150_send_mag(AK8963_REG_CNTL1,1,data);
 	
 	
 
@@ -828,3 +828,29 @@ void Calibrate_accel(KAL_ACC_XYZ * COMPAS)
 // setSleepEnabled(false); // thanks to Jack Elston for pointing this one out!
 
 
+uint8_t Mag_read_mpu(uint8_t* buffer)
+{
+	uint8_t data=0;
+	
+	/* read status reg */
+	MPU_9150_read_mag(AK8963_REG_ST1,1,&data);
+	if ((data&0b1)!=0b1)
+	{
+		// continous mode + 16 bit ooutput data
+		data=0x11;
+		MPU_9150_send_mag(AK8963_REG_CNTL1,1,&data);
+		return 0;
+	}
+	else
+	{
+		MPU_9150_read_mag(AK8963_REG_HXL,6,buffer);
+		// continous mode + 16 bit ooutput data
+		data=0x11;
+		MPU_9150_send_mag(AK8963_REG_CNTL1,1,&data);
+		return 1;
+	}
+	
+	
+	
+	
+}

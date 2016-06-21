@@ -160,6 +160,8 @@ typedef struct{
 	uint32_t baro_uP;
 	uint8_t mag[6];
 	float gps_alt;
+	float gps_distance;
+	float gps_bear;
 	short temp;
 	
 

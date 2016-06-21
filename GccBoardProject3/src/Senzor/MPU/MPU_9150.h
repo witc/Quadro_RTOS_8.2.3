@@ -499,6 +499,7 @@ void MPU9150_getMotion3(uint8_t *buffer);
 void MPU9150_Gyro_Tempr_Bias(short *offset);
 uint8_t MPU9150_Gyro_Tempr_Bias_no_fifo(short *offset);
 void Calibrate_accel(KAL_ACC_XYZ * COMPAS);
+uint8_t Mag_read_mpu(uint8_t* buffer);
 
 
 #ifdef __cplusplus

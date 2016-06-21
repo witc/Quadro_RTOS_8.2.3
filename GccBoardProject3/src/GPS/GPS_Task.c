@@ -260,7 +260,7 @@ void GPS_Task(void *pvParameters)
  	usart_enable_interrupt(GPS_USART,US_IER_RXRDY);
  	
 	/*init position */
-	static GPS_POSITION_t Master_Last= {50.0036792, 16.240169};
+	static GPS_POSITION_t Master_Last= {50.003947, 16.240242};
 	static GPS_POSITION_t Slave_Last= {50.0036792, 16.240169};		
 	GPS_COMP_DATA_t sCOMP_Data;
 	float HDOP=0;
@@ -301,7 +301,7 @@ void GPS_Task(void *pvParameters)
 							GPS_Utils_CalcDisAndBear(&Master_Last,&Slave_Last,&sCOMP_Data);
 							temp_HDOP=(GPS_data_decode.HDOP[0]-'0')*100+(GPS_data_decode.HDOP[2]-'0')*10+(GPS_data_decode.HDOP[3]-'0');
 							HDOP=(float)temp_HDOP/100;
- 							if (HDOP<2)
+ 							if (HDOP<4)
  							{
 								 ioport_toggle_pin_level(LED0);
  							}
@@ -309,7 +309,8 @@ void GPS_Task(void *pvParameters)
 							temp_GPS_ALT=(GPS_data_decode.Altitude[0]-'0')*1000+(GPS_data_decode.Altitude[1]-'0')*100+(GPS_data_decode.Altitude[2]-'0')*10+(GPS_data_decode.Altitude[4]-'0');
 							//temp_GPS_ALT/=10;
 							
-							Data_Queue_GPS.gps_alt=(float)(temp_GPS_ALT/10);
+							Data_Queue_GPS.gps_distance=(float)(sCOMP_Data.dDistance);
+							Data_Queue_GPS.gps_bear=(float)(sCOMP_Data.dBear);
  							Data_Queue_GPS.senzor_type=GPS_TYPE;
 // 							Data_Queue_GPS.gps_alt[0]=(GPS_data_decode.Altitude[0]-'0');
 // 							Data_Queue_GPS.gps_alt[1]=(GPS_data_decode.Altitude[1]-'0');

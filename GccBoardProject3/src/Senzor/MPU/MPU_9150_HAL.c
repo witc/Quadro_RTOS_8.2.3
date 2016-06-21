@@ -15,7 +15,7 @@
 #include "Periph_init.h"
 
 extern struct spi_device device_mpu;
-#define ADDR_9150_MAG	0X0C
+#define ADDR_9150_MAG	(0X0C)
 
 uint32_t MPU_9150_send(unsigned char Adress, unsigned char Length, unsigned char *Data)
 {	
@@ -65,7 +65,7 @@ uint32_t MPU_9150_send_mag(unsigned char Adress, unsigned char Length, unsigned 
 	};
 	// Perform a multi-uint8_t read access then check the result.
 	//
-	twi_master_read(TWI0, &packet_read);
+	twi_master_write(TWI0, &packet_read);
 	
 	taskEXIT_CRITICAL();
 }
@@ -88,7 +88,7 @@ uint32_t MPU_9150_read_mag(unsigned char Adress, unsigned char Length, unsigned 
 	
 	//	taskEXIT_CRITICAL();
 
-	twi_master_write(TWI0, &packet_write);
+	twi_master_read(TWI0, &packet_write);
 	taskEXIT_CRITICAL();
 	return 0;
 }
